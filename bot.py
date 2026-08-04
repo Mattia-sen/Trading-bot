@@ -150,8 +150,9 @@ def call_model(prompt):
             headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"],
                      "content-type": "application/json"},
             json={"contents": [{"parts": [{"text": prompt}]}],
-                  "generationConfig": {"maxOutputTokens": 200, "temperature": 1.0,
-                                       "responseMimeType": "application/json"}},
+                  "generationConfig": {"maxOutputTokens": 400, "temperature": 1.0,
+                                       "responseMimeType": "application/json",
+                                       "thinkingConfig": {"thinkingBudget": 0}}},
             timeout=45)
        if r.status_code != 200:
             if r.status_code == 429:
