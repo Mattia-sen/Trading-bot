@@ -154,9 +154,9 @@ def call_model(prompt):
                                        "responseMimeType": "application/json",
                                        "thinkingConfig": {"thinkingBudget": 0}}},
             timeout=45)
-       if r.status_code != 200:
+        if r.status_code != 200:
             if r.status_code == 429:
-                time.sleep(20)             # free-tier rate limit, back off
+                time.sleep(20)
             raise RuntimeError(f"HTTP {r.status_code}: {r.text[:150]}")
         txt = r.json()["candidates"][0]["content"]["parts"][0]["text"]
     else:
@@ -164,7 +164,7 @@ def call_model(prompt):
             headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"],
                      "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
-            json={"model": ANTHROPIC_M, "max_tokens": 200,
+            json={"model": ANTHROPIC_M, "max_tokens": 400,
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=45)
         r.raise_for_status()
@@ -172,31 +172,6 @@ def call_model(prompt):
 
     txt = txt.replace("```json", "").replace("```", "").strip()
     return json.loads(txt[txt.index("{"):txt.rindex("}") + 1])
-
-def build_prompt(strat, b, candles, a, can_buy):
-    closes = ",".join(f"{c[4]:.2f}" for c in candles[-WINDOW:])
-    px = candles[-1][4]
-    p  = b["pos"]
-    if p:
-        pos  = f"HOLDING since {p['entry']:.2f}. Stop at {p['stop']:.2f}."
-        opts = '"hold" or "close"'
-    else:
-        pos  = "FLAT (no position)."
-        opts = '"hold" or "buy"' if can_buy else '"hold" (no buy left today)'
-    return f"""You trade spot {SYMBOL}. You can only be long or flat. No shorting, no leverage.
-{HINT[strat]}
-
-Last {WINDOW} hourly closes, oldest first: {closes}
-Current price: {px:.2f}
-Typical hourly move (ATR{ATR_LEN}): {a:.2f}
-Your position: {pos}
-You may buy at most once per day.
-
-Position size is decided for you by a fixed risk rule. Do not choose size.
-
-Reply with ONLY this JSON object, nothing else:
-{{"action": {opts}, "confidence": <0-100>, "reason": "<max 10 words>"}}"""
-
 # ──────────────────────────── one bar ───────────────────────────────
 
 def step(s, candles):
