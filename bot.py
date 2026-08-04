@@ -35,7 +35,7 @@ import requests
 
 # ───────────────────────────── settings ─────────────────────────────
 
-SYMBOL       = "ETH/USDT"
+SYMBOL       = "ETH/USD"
 TIMEFRAME    = "1h"
 CAPITAL      = 100.0
 RISK_PCT     = 0.01
@@ -350,14 +350,29 @@ def emit(s, px):
         floor=floor, twins=gaps, books=rows, calib=calib,
         history=[dict(t=h["t"][5:], px=h["px"], eq=h["eq"]) for h in s["history"]],
         recent=s["recent"][:25]), separators=(",", ":")))
+EXCHANGES = ["kraken", "coinbaseexchange", "bitstamp"]
+
+def fetch_candles():
+    """GitHub's runners are in the US and Binance returns 451 there.
+    Try exchanges in order until one answers."""
+    last = None
+    for name in EXCHANGES:
+        try:
+            ex = getattr(ccxt, name)({"enableRateLimit": True})
+            c = ex.fetch_ohlcv(SYMBOL, TIMEFRAME, limit=WINDOW + ATR_LEN + 5)
+            if c and len(c) > ATR_LEN + 5:
+                print(f"prices from {name}")
+                return c[:-1]
+        except Exception as e:
+            last = f"{name}: {type(e).__name__}"
+    raise RuntimeError(f"no exchange reachable ({last})")
 
 def main():
     s = load()
     if s.get("done"):
         print("experiment complete")
         return
-    ex = ccxt.binance({"enableRateLimit": True})
-    c  = ex.fetch_ohlcv(SYMBOL, TIMEFRAME, limit=WINDOW + ATR_LEN + 5)[:-1]
+    c = fetch_candles()
     if c[-1][0] == s["last_ts"]:
         print("no new candle, refreshing dashboard only")
         emit(s, c[-1][4])
