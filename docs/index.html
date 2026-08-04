@@ -1,1 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E1316">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Trading Lab</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0E1316;--panel:#151C21;--line:#242F35;--line2:#1A2429;--txt:#D8DFE2;
+--dim:#75858D;--amber:#F0A93B;--cyan:#4FC3D9;--violet:#9C8BC4;--good:#6FA96B;--bad:#C4553D;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',ui-monospace,monospace;
+font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased;
+padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:760px;margin:0 auto;padding:14px 11px 40px}
+.lbl{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.16em;
+font-weight:600;font-size:10.5px;color:var(--dim)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:3px;margin-bottom:10px}
+.card>.hd{padding:9px 12px;border-bottom:1px solid var(--line2);display:flex;
+justify-content:space-between;align-items:center;gap:8px}
 
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+h1{font-family:'Barlow Condensed',sans-serif;font-size:20px;letter-spacing:.06em;
+text-transform:uppercase;font-weight:600;line-height:1}
+h1 small{display:block;font-size:10px;letter-spacing:.15em;color:var(--dim);margin-top:5px}
+.px{text-align:right}.px .v{font-size:21px;font-weight:600;letter-spacing:-.02em}
+.px .t{font-size:10px;color:var(--dim);margin-top:3px}.stale{color:var(--bad)!important}
+
+/* noise floor - the headline */
+.floor{padding:12px;text-align:center}
+.floor .n{font-size:34px;font-weight:600;color:var(--amber);letter-spacing:-.03em;line-height:1}
+.floor .c{font-size:11px;color:var(--dim);margin-top:7px;line-height:1.55;max-width:44ch;
+margin-left:auto;margin-right:auto}
+
+.phase{padding:10px 12px}
+.track{height:5px;background:#0A0F12;border-radius:3px;overflow:hidden;margin:8px 0 6px;display:flex}
+.track i{display:block;height:100%}.fa{background:var(--cyan)}.fb{background:var(--amber)}
+.msg{font-size:11.5px;color:var(--dim);line-height:1.5}.warn{color:var(--amber)}
+
+svg{display:block;width:100%;height:180px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;padding:8px 12px 10px}
+.legend span{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--dim);
+font-family:'Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.legend i{width:12px;height:2px}
+
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.12em;
+font-size:9.5px;color:var(--dim);font-weight:600;text-align:right;padding:8px 5px;
+border-bottom:1px solid var(--line)}
+th:first-child{text-align:left;padding-left:12px}
+td{padding:7px 5px;text-align:right;border-bottom:1px solid var(--line2);font-size:12px}
+td:first-child{text-align:left;padding-left:12px;font-weight:500}
+tr:last-child td{border-bottom:none}
+tr.ctrl td{color:var(--dim)}tr.ctrl td:first-child{color:var(--cyan)}
+tr.win td:first-child{color:var(--amber)}
+tr.noise td:nth-child(3){opacity:.35}
+.dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--good);
+margin-left:5px;vertical-align:2px}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+
+.twins{padding:4px 12px 12px}
+.tw{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11.5px}
+.tw .s{width:58px;color:var(--dim)}
+.tw .bar{flex:1;height:16px;position:relative}
+.tw .bar i{position:absolute;top:6px;height:4px;background:var(--violet);border-radius:2px}
+.tw .g{width:52px;text-align:right}
+
+.cal .r{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:11.5px}
+.cal{padding:4px 12px 12px}
+.cal .bar{flex:1;height:6px;background:#0A0F12;border-radius:3px;overflow:hidden}
+.cal .bar i{display:block;height:100%;background:var(--cyan)}
+.cal .said{width:52px;color:var(--dim)}.cal .was{width:64px;text-align:right}
+
+.log{max-height:240px;overflow-y:auto}
+.log .r{display:flex;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line2);font-size:10.5px}
+.log .r:last-child{border-bottom:none}
+.log .b{width:70px;flex:none;color:var(--dim)}
+.log .a{width:42px;flex:none;font-weight:600}.log .w{flex:1;color:#93A1A7}
+.BUY{color:var(--good)}.CLOSE{color:var(--violet)}.STOP{color:var(--bad)}
+.FAIL,.BLOCK{color:var(--bad)}.PHASE{color:var(--amber)}
+.empty{padding:22px 12px;text-align:center;color:var(--dim);font-size:11.5px}
+.badge{font-family:'Barlow Condensed',sans-serif;font-size:9.5px;letter-spacing:.13em;
+text-transform:uppercase;color:var(--dim)}
+footer{text-align:center;color:var(--dim);font-size:10px;margin-top:14px;line-height:1.8}
+</style>
+</head>
+<body><div class="wrap">
+
+<header>
+  <div><h1>Trading Lab<small id="sym">loading…</small></h1></div>
+  <div class="px"><div class="v" id="price">—</div><div class="t" id="upd">—</div></div>
+</header>
+
+<div class="card"><div class="floor">
+  <div class="lbl">Measured noise floor</div>
+  <div class="n" id="floor">—</div>
+  <div class="c" id="floorc">Waiting for the twins to separate.</div>
+</div></div>
+
+<div class="card"><div class="phase">
+  <div class="lbl">Progress</div>
+  <div class="track"><i class="fa" id="ba"></i><i class="fb" id="bb"></i></div>
+  <div class="msg" id="pmsg">—</div>
+</div></div>
+
+<div class="card">
+  <svg id="chart" viewBox="0 0 340 180" preserveAspectRatio="none"></svg>
+  <div class="legend" id="leg"></div>
+</div>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Book</th><th>Equity</th><th>Ret</th><th>N</th><th>Win</th><th>AvgR</th><th>DD</th></tr></thead>
+    <tbody id="tb"><tr><td colspan="7" class="empty">waiting for first run</td></tr></tbody>
+  </table>
+</div>
+
+<div class="card" id="twcard" style="display:none">
+  <div class="hd"><span class="lbl">Twin gaps</span><span class="badge">same strategy, run twice</span></div>
+  <div class="twins" id="tw"></div>
+</div>
+
+<div class="card" id="calcard" style="display:none">
+  <div class="hd"><span class="lbl">Does it know when it's right?</span></div>
+  <div class="cal" id="cal"></div>
+</div>
+
+<div class="card">
+  <div class="hd"><span class="lbl">Activity</span><span class="badge" id="health">—</span></div>
+  <div class="log" id="log"><div class="empty">nothing yet</div></div>
+</div>
+
+<footer>Simulated. No exchange account, no orders, no money at risk.<br>
+<span id="mdl"></span> · refreshes every 60s</footer>
+</div>
+
+<script>
+const C={BASE:'#8FA3AD',TREND:'#F0A93B',LEVELS:'#6FA96B',SWING:'#C48BB4',RECENT:'#4FC3D9',
+SHAPE:'#D9A45F',MEAN:'#7FBF7A',RANGE:'#5F9FD9',SPEED:'#C4553D',CALM:'#9C8BC4',
+RANDOM:'#5A6B73',HODL:'#3E5C66',CROSS:'#8878A8'};
+const col=n=>C[n.replace(/-[AB]$/,'')]||'#889';
+const $=i=>document.getElementById(i), sg=v=>(v>=0?'+':'')+v.toFixed(1);
+
+async function tick(){
+  let d; try{ d=await (await fetch('data.json?'+Date.now())).json(); }
+  catch(e){ $('upd').textContent='no data yet'; return; }
+
+  $('sym').textContent=d.symbol+' · '+d.timeframe;
+  $('price').textContent='$'+d.price.toLocaleString(undefined,{minimumFractionDigits:2});
+  const age=(Date.now()-new Date(d.updated))/6e4;
+  $('upd').textContent=age<90?Math.round(age)+'m ago':Math.round(age/60)+'h ago';
+  $('upd').className='t'+(age>150?' stale':'');
+  $('mdl').textContent=d.model;
+  $('health').textContent=d.calls+' calls · '+d.fails+' failed'+
+    (d.calls?' ('+(100*d.fails/(d.calls+d.fails)).toFixed(1)+'%)':'');
+
+  // noise floor
+  $('floor').textContent = d.floor ? '±'+d.floor.toFixed(1)+'%' : '—';
+  $('floorc').textContent = d.floor
+    ? `Identical twins finish this far apart on average. Any book that hasn't beaten ${d.floor.toFixed(1)}% has shown nothing.`
+    : 'Waiting for the twins to separate.';
+
+  const tot=d.phaseA+d.phaseB, a=Math.min(d.bar,d.phaseA), b=Math.max(0,d.bar-d.phaseA);
+  $('ba').style.width=(a/tot*100)+'%'; $('bb').style.width=(b/tot*100)+'%';
+  $('pmsg').innerHTML = d.done ? 'Experiment complete.'
+    : d.phase==='A' ? `Phase A · hour ${d.bar} of ${d.phaseA}. <span class="warn">Leaderboard is not evidence yet.</span>`
+    : `Phase B · re-testing <b style="color:var(--amber)">${d.winner}</b> alone on prices it has never seen.`;
+
+  // chart
+  const H=d.history||[], svg=$('chart'); svg.innerHTML='';
+  if(H.length>1){
+    const ns=d.books.map(x=>x.name);
+    let lo=1e9,hi=-1e9;
+    H.forEach(h=>ns.forEach(n=>{const v=h.eq[n];if(v!=null){if(v<lo)lo=v;if(v>hi)hi=v}}));
+    const p=(hi-lo)*.08||1; lo-=p; hi+=p;
+    const X=i=>i/(H.length-1)*340, Y=v=>180-(v-lo)/(hi-lo)*180;
+    let g=`<line x1="0" y1="${Y(d.capital)}" x2="340" y2="${Y(d.capital)}" stroke="#2B3940" stroke-dasharray="3 4"/>`;
+    ns.forEach(n=>{
+      const pts=H.map((h,i)=>h.eq[n]!=null?X(i).toFixed(1)+','+Y(h.eq[n]).toFixed(1):null).filter(Boolean).join(' ');
+      const key=['CROSS','HODL','RANDOM'].includes(n)||n===d.winner;
+      g+=`<polyline points="${pts}" fill="none" stroke="${col(n)}" stroke-width="${key?1.8:.9}" opacity="${key?1:.4}" vector-effect="non-scaling-stroke"/>`;
+    });
+    svg.innerHTML=g;
+    $('leg').innerHTML=['CROSS','RANDOM','HODL'].map(n=>
+      `<span><i style="background:${C[n]}"></i>${n}</span>`).join('')+
+      `<span><i style="background:#8FA3AD;opacity:.4"></i>20 ai books</span>`;
+  }
+
+  // table
+  $('tb').innerHTML=d.books.map(x=>{
+    const noise=Math.abs(x.ret)<d.floor&&x.kind==='ai';
+    return `<tr class="${x.kind!=='ai'?'ctrl':''}${x.name===d.winner?' win':''}${noise?' noise':''}">
+      <td>${x.name}${x.inpos?'<span class="dot"></span>':''}</td>
+      <td>${x.eq.toFixed(2)}</td><td class="${x.ret>=0?'pos':'neg'}">${sg(x.ret)}%</td>
+      <td>${x.n}</td><td>${x.n?x.win+'%':'—'}</td>
+      <td class="${x.avgR>=0?'pos':'neg'}">${x.n?sg(x.avgR):'—'}</td>
+      <td>${x.dd.toFixed(0)}%</td></tr>`}).join('');
+
+  // twin gaps
+  if(d.twins&&d.twins.length){
+    $('twcard').style.display='';
+    const mx=Math.max(...d.twins.map(t=>t.gap),1);
+    $('tw').innerHTML=d.twins.map(t=>`<div class="tw"><span class="s">${t.s}</span>
+      <span class="bar"><i style="left:0;width:${t.gap/mx*100}%"></i></span>
+      <span class="g">${t.gap.toFixed(1)}%</span></div>`).join('')
+      +`<div class="msg" style="margin-top:8px">Each bar is the distance between two runs of the same strategy. Nothing differs but chance, so this is pure measurement error.</div>`;
+  }
+
+  if(d.calib&&d.calib.length){
+    $('calcard').style.display='';
+    $('cal').innerHTML=d.calib.map(c=>`<div class="r"><span class="said">${c.band}%</span>
+      <span class="bar"><i style="width:${c.hit}%"></i></span>
+      <span class="was">${c.hit}% <span style="color:var(--dim)">n${c.n}</span></span></div>`).join('')
+      +`<div class="msg" style="margin-top:8px">Left: how sure it said it was. Right: how often it was actually right.</div>`;
+  }
+
+  const R=d.recent||[];
+  $('log').innerHTML=R.length?R.map(r=>
+    `<div class="r"><span class="b">${r.book}</span><span class="a ${r.act}">${r.act}</span><span class="w"></span></div>`).join('')
+    :'<div class="empty">nothing yet</div>';
+  document.querySelectorAll('.log .w').forEach((el,i)=>el.textContent=R[i].why||'');
+}
+tick(); setInterval(tick,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
+</script>
+</body></html>
