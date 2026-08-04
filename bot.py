@@ -153,10 +153,10 @@ def call_model(prompt):
                   "generationConfig": {"maxOutputTokens": 200, "temperature": 1.0,
                                        "responseMimeType": "application/json"}},
             timeout=45)
-        if r.status_code == 429:
-            time.sleep(20)                 # free-tier rate limit, back off once
-            raise RuntimeError("rate limited")
-        r.raise_for_status()
+       if r.status_code != 200:
+            if r.status_code == 429:
+                time.sleep(20)             # free-tier rate limit, back off
+            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:150]}")
         txt = r.json()["candidates"][0]["content"]["parts"][0]["text"]
     else:
         r = requests.post("https://api.anthropic.com/v1/messages",
@@ -257,7 +257,7 @@ def step(s, candles):
             s["calls_today"] += 1
         except Exception as e:
             s["fails"] += 1
-            note(name, "FAIL", type(e).__name__)
+            note(name, "FAIL", str(e)[:70])
             continue
         time.sleep(CALL_GAP)
 
