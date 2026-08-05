@@ -51,9 +51,11 @@ HISTORY_MAX  = 800
 
 # ─── swap the model here. Only place the provider appears. ───
 PROVIDER    = "gemini"                 # "gemini" or "anthropic"
-GEMINI_M    = "gemini-2.5-flash"       # free tier. also try gemini-3-flash-preview
+GEMINI_M    = "gemini-2.5-flash"       # free tier
 ANTHROPIC_M = "claude-sonnet-4-6"      # paid, if you ever switch
 CALL_GAP    = 5.0                      # seconds between calls (free tier ~10-15/min)
+
+EXCHANGES = ["kraken", "coinbaseexchange", "bitstamp"]
 
 STATE = Path("state.json")
 DATA  = Path("docs/data.json")
@@ -171,8 +173,9 @@ def call_model(prompt):
         txt = "".join(x.get("text", "") for x in r.json()["content"])
 
     txt = txt.replace("```json", "").replace("```", "").strip()
+    return json.loads(txt[txt.index("{"):txt.rindex("}") + 1])
 
-    def build_prompt(strat, b, candles, a, can_buy):
+def build_prompt(strat, b, candles, a, can_buy):
     closes = ",".join(f"{c[4]:.2f}" for c in candles[-WINDOW:])
     px = candles[-1][4]
     p  = b["pos"]
@@ -195,6 +198,7 @@ Position size is decided for you by a fixed risk rule. Do not choose size.
 
 Reply with ONLY this JSON object, nothing else:
 {{"action": {opts}, "confidence": <0-100>, "reason": "<max 10 words>"}}"""
+
 # ──────────────────────────── one bar ───────────────────────────────
 
 def step(s, candles):
@@ -349,7 +353,8 @@ def emit(s, px):
         floor=floor, twins=gaps, books=rows, calib=calib,
         history=[dict(t=h["t"][5:], px=h["px"], eq=h["eq"]) for h in s["history"]],
         recent=s["recent"][:25]), separators=(",", ":")))
-EXCHANGES = ["kraken", "coinbaseexchange", "bitstamp"]
+
+# ─────────────────────────── prices ─────────────────────────────────
 
 def fetch_candles():
     """GitHub's runners are in the US and Binance returns 451 there.
