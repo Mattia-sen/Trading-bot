@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: trade
-  cancel-in-progress: false     # never let two runs touch state.json at once
+  cancel-in-progress: false     # queue runs, never overlap
 
 jobs:
   tick:
@@ -31,12 +31,32 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python bot.py
 
+      # state.json and docs/data.json are GENERATED, never hand-edited.
+      # So on collision we always keep ours - no merge, no rebase, no conflict.
+      # Everything else (bot.py, index.html) is taken fresh from the remote,
+      # so an edit made in the browser mid-run is never overwritten.
       - name: Save results
         run: |
           git config user.name  "trading-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add state.json docs/data.json
-          git diff --staged --quiet && echo "nothing changed" && exit 0
-          git commit -m "bar $(date -u +%Y-%m-%dT%H:%M)"
-          git pull --rebase --autostash || true
-          git push
+          mkdir -p /tmp/out
+          cp state.json /tmp/out/state.json
+          cp docs/data.json /tmp/out/data.json
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/out/state.json state.json
+            mkdir -p docs && cp /tmp/out/data.json docs/data.json
+            git add state.json docs/data.json
+            if git diff --staged --quiet; then
+              echo "nothing changed"; exit 0
+            fi
+            git commit -m "bar $(date -u +%Y-%m-%dT%H:%M)"
+            if git push origin HEAD:main; then
+              echo "pushed on attempt $i"; exit 0
+            fi
+            echo "push race, retrying in 5s"
+            sleep 5
+          done
+          echo "could not push after 5 attempts"
+          exit 1
