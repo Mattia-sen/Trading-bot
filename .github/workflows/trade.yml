@@ -26,6 +26,17 @@ jobs:
       - name: Install
         run: pip install --quiet ccxt requests
 
+      - name: Check key
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "length: ${#GEMINI_API_KEY}"
+          case "$GEMINI_API_KEY" in
+            AIza*) echo "prefix: ok" ;;
+            "")    echo "prefix: EMPTY SECRET" ;;
+            *)     echo "prefix: wrong, does not start with AIza" ;;
+          esac
+
       - name: Run one hour
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
