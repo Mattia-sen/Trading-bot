@@ -15,32 +15,38 @@
 body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',ui-monospace,monospace;
 font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased;
 padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-.wrap{max-width:760px;margin:0 auto;padding:14px 11px 40px}
+.wrap{max-width:780px;margin:0 auto;padding:13px 11px 40px}
 .lbl{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.16em;
 font-weight:600;font-size:10.5px;color:var(--dim)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:3px;margin-bottom:10px}
 .card>.hd{padding:9px 12px;border-bottom:1px solid var(--line2);display:flex;
 justify-content:space-between;align-items:center;gap:8px}
 
-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:11px}
 h1{font-family:'Barlow Condensed',sans-serif;font-size:20px;letter-spacing:.06em;
 text-transform:uppercase;font-weight:600;line-height:1}
 h1 small{display:block;font-size:10px;letter-spacing:.15em;color:var(--dim);margin-top:5px}
 .px{text-align:right}.px .v{font-size:21px;font-weight:600;letter-spacing:-.02em}
 .px .t{font-size:10px;color:var(--dim);margin-top:3px}.stale{color:var(--bad)!important}
 
-/* noise floor - the headline */
-.floor{padding:12px;text-align:center}
-.floor .n{font-size:34px;font-weight:600;color:var(--amber);letter-spacing:-.03em;line-height:1}
-.floor .c{font-size:11px;color:var(--dim);margin-top:7px;line-height:1.55;max-width:44ch;
-margin-left:auto;margin-right:auto}
+/* tabs */
+nav{display:flex;gap:0;margin-bottom:11px;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+nav button{flex:1;background:var(--panel);border:none;color:var(--dim);cursor:pointer;
+padding:11px 6px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
+letter-spacing:.13em;font-size:11px;font-weight:600;border-right:1px solid var(--line)}
+nav button:last-child{border-right:none}
+nav button.on{background:#1E2930;color:var(--amber)}
+.tab{display:none}.tab.on{display:block}
 
+.floor{padding:12px;text-align:center}
+.floor .n{font-size:32px;font-weight:600;color:var(--amber);letter-spacing:-.03em;line-height:1}
+.floor .c{font-size:11px;color:var(--dim);margin-top:7px;line-height:1.55;max-width:44ch;margin:7px auto 0}
 .phase{padding:10px 12px}
 .track{height:5px;background:#0A0F12;border-radius:3px;overflow:hidden;margin:8px 0 6px;display:flex}
 .track i{display:block;height:100%}.fa{background:var(--cyan)}.fb{background:var(--amber)}
 .msg{font-size:11.5px;color:var(--dim);line-height:1.5}.warn{color:var(--amber)}
 
-svg{display:block;width:100%;height:180px}
+svg{display:block;width:100%;height:175px}
 .legend{display:flex;gap:12px;flex-wrap:wrap;padding:8px 12px 10px}
 .legend span{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--dim);
 font-family:'Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase}
@@ -56,7 +62,8 @@ td:first-child{text-align:left;padding-left:12px;font-weight:500}
 tr:last-child td{border-bottom:none}
 tr.ctrl td{color:var(--dim)}tr.ctrl td:first-child{color:var(--cyan)}
 tr.win td:first-child{color:var(--amber)}
-tr.noise td:nth-child(3){opacity:.35}
+tr.noise td:nth-child(2){opacity:.3}
+tr.clk{cursor:pointer}tr.clk:hover td{background:#1B242A}
 .dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--good);
 margin-left:5px;vertical-align:2px}
 .pos{color:var(--good)}.neg{color:var(--bad)}
@@ -66,22 +73,41 @@ margin-left:5px;vertical-align:2px}
 .tw .s{width:58px;color:var(--dim)}
 .tw .bar{flex:1;height:16px;position:relative}
 .tw .bar i{position:absolute;top:6px;height:4px;background:var(--violet);border-radius:2px}
-.tw .g{width:52px;text-align:right}
-
-.cal .r{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:11.5px}
+.tw .g{width:50px;text-align:right}
 .cal{padding:4px 12px 12px}
+.cal .r{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:11.5px}
 .cal .bar{flex:1;height:6px;background:#0A0F12;border-radius:3px;overflow:hidden}
 .cal .bar i{display:block;height:100%;background:var(--cyan)}
-.cal .said{width:52px;color:var(--dim)}.cal .was{width:64px;text-align:right}
+.cal .said{width:52px;color:var(--dim)}.cal .was{width:62px;text-align:right}
 
-.log{max-height:240px;overflow-y:auto}
+/* trade rows */
+.tr{padding:9px 12px;border-bottom:1px solid var(--line2)}
+.tr:last-child{border-bottom:none}
+.tr .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.tr .bk{font-weight:600;font-size:12px}
+.tr .r{font-weight:600;font-size:12px}
+.tr .mid{display:flex;gap:10px;font-size:10.5px;color:var(--dim);margin-top:4px;flex-wrap:wrap}
+.tr .why{font-size:10.5px;color:#93A1A7;margin-top:4px;line-height:1.45}
+.tr .why b{color:var(--dim);font-weight:400}
+.open{border-left:2px solid var(--good)}
+
+/* picker */
+.pick{display:flex;flex-wrap:wrap;gap:5px;padding:10px 12px}
+.pick button{background:#0F161A;border:1px solid var(--line);color:var(--dim);cursor:pointer;
+padding:6px 9px;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px}
+.pick button.on{border-color:var(--amber);color:var(--amber);background:#1D1A12}
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr))}
+.stat div{padding:9px 10px;border-right:1px solid var(--line2);border-bottom:1px solid var(--line2)}
+.stat .v{font-size:16px;font-weight:600;margin-top:4px}
+.hintbox{padding:10px 12px;font-size:11.5px;color:#93A1A7;line-height:1.5;border-bottom:1px solid var(--line2)}
+
+.log{max-height:260px;overflow-y:auto}
 .log .r{display:flex;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line2);font-size:10.5px}
-.log .r:last-child{border-bottom:none}
 .log .b{width:70px;flex:none;color:var(--dim)}
 .log .a{width:42px;flex:none;font-weight:600}.log .w{flex:1;color:#93A1A7}
 .BUY{color:var(--good)}.CLOSE{color:var(--violet)}.STOP{color:var(--bad)}
 .FAIL,.BLOCK{color:var(--bad)}.PHASE{color:var(--amber)}
-.empty{padding:22px 12px;text-align:center;color:var(--dim);font-size:11.5px}
+.empty{padding:24px 12px;text-align:center;color:var(--dim);font-size:11.5px;line-height:1.6}
 .badge{font-family:'Barlow Condensed',sans-serif;font-size:9.5px;letter-spacing:.13em;
 text-transform:uppercase;color:var(--dim)}
 footer{text-align:center;color:var(--dim);font-size:10px;margin-top:14px;line-height:1.8}
@@ -94,43 +120,75 @@ footer{text-align:center;color:var(--dim);font-size:10px;margin-top:14px;line-he
   <div class="px"><div class="v" id="price">—</div><div class="t" id="upd">—</div></div>
 </header>
 
-<div class="card"><div class="floor">
-  <div class="lbl">Measured noise floor</div>
-  <div class="n" id="floor">—</div>
-  <div class="c" id="floorc">Waiting for the twins to separate.</div>
-</div></div>
+<nav>
+  <button class="on" data-t="ov">Overview</button>
+  <button data-t="tr">Trades</button>
+  <button data-t="bk">Each bot</button>
+</nav>
 
-<div class="card"><div class="phase">
-  <div class="lbl">Progress</div>
-  <div class="track"><i class="fa" id="ba"></i><i class="fb" id="bb"></i></div>
-  <div class="msg" id="pmsg">—</div>
-</div></div>
+<!-- ══ OVERVIEW ══ -->
+<div class="tab on" id="ov">
+  <div class="card"><div class="floor">
+    <div class="lbl">Measured noise floor</div>
+    <div class="n" id="floor">—</div>
+    <div class="c" id="floorc">Waiting for the twins to separate.</div>
+  </div></div>
 
-<div class="card">
-  <svg id="chart" viewBox="0 0 340 180" preserveAspectRatio="none"></svg>
-  <div class="legend" id="leg"></div>
+  <div class="card"><div class="phase">
+    <div class="lbl">Progress</div>
+    <div class="track"><i class="fa" id="ba"></i><i class="fb" id="bb"></i></div>
+    <div class="msg" id="pmsg">—</div>
+  </div></div>
+
+  <div class="card">
+    <svg id="chart" viewBox="0 0 340 175" preserveAspectRatio="none"></svg>
+    <div class="legend" id="leg"></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="lbl">Leaderboard</span><span class="badge">tap a row for detail</span></div>
+    <table><thead><tr><th>Book</th><th>Return</th><th>Trades</th><th>Win</th><th>AvgR</th><th>DD</th></tr></thead>
+    <tbody id="tb"><tr><td colspan="6" class="empty">waiting for first run</td></tr></tbody></table>
+  </div>
+
+  <div class="card" id="twcard" style="display:none">
+    <div class="hd"><span class="lbl">Twin gaps</span><span class="badge">same strategy, run twice</span></div>
+    <div class="twins" id="tw"></div>
+  </div>
+
+  <div class="card" id="calcard" style="display:none">
+    <div class="hd"><span class="lbl">Does it know when it's right?</span></div>
+    <div class="cal" id="cal"></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="lbl">Activity</span><span class="badge" id="health">—</span></div>
+    <div class="log" id="log"><div class="empty">nothing yet</div></div>
+  </div>
 </div>
 
-<div class="card">
-  <table>
-    <thead><tr><th>Book</th><th>Equity</th><th>Ret</th><th>N</th><th>Win</th><th>AvgR</th><th>DD</th></tr></thead>
-    <tbody id="tb"><tr><td colspan="7" class="empty">waiting for first run</td></tr></tbody>
-  </table>
+<!-- ══ ALL TRADES ══ -->
+<div class="tab" id="tr">
+  <div class="card">
+    <div class="pick" id="filt"></div>
+  </div>
+  <div class="card">
+    <div class="hd"><span class="lbl">Every trade</span><span class="badge" id="trcount">—</span></div>
+    <div id="trlist"><div class="empty">No trades yet.<br>The bots have to buy something first.</div></div>
+  </div>
 </div>
 
-<div class="card" id="twcard" style="display:none">
-  <div class="hd"><span class="lbl">Twin gaps</span><span class="badge">same strategy, run twice</span></div>
-  <div class="twins" id="tw"></div>
-</div>
-
-<div class="card" id="calcard" style="display:none">
-  <div class="hd"><span class="lbl">Does it know when it's right?</span></div>
-  <div class="cal" id="cal"></div>
-</div>
-
-<div class="card">
-  <div class="hd"><span class="lbl">Activity</span><span class="badge" id="health">—</span></div>
-  <div class="log" id="log"><div class="empty">nothing yet</div></div>
+<!-- ══ EACH BOT ══ -->
+<div class="tab" id="bk">
+  <div class="card"><div class="pick" id="picker"></div></div>
+  <div class="card" id="bkhint" style="display:none"><div class="hintbox" id="hint"></div>
+    <div class="stat" id="bkstat"></div></div>
+  <div class="card"><svg id="bchart" viewBox="0 0 340 175" preserveAspectRatio="none"></svg>
+    <div class="legend" id="bleg"></div></div>
+  <div class="card">
+    <div class="hd"><span class="lbl">Its trades</span><span class="badge" id="bkcount">—</span></div>
+    <div id="bklist"><div class="empty">No trades yet.</div></div>
+  </div>
 </div>
 
 <footer>Simulated. No exchange account, no orders, no money at risk.<br>
@@ -143,85 +201,156 @@ SHAPE:'#D9A45F',MEAN:'#7FBF7A',RANGE:'#5F9FD9',SPEED:'#C4553D',CALM:'#9C8BC4',
 RANDOM:'#5A6B73',HODL:'#3E5C66',CROSS:'#8878A8'};
 const col=n=>C[n.replace(/-[AB]$/,'')]||'#889';
 const $=i=>document.getElementById(i), sg=v=>(v>=0?'+':'')+v.toFixed(1);
+const esc=s=>{const d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML};
+let D=null, sel=null, filt='ALL';
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.id===b.dataset.t));
+  if(b.dataset.t==='bk')drawBook();
+});
+
+function tradeRow(t,showBook){
+  const cls=t.R>=0?'pos':'neg';
+  const dur=t.tin&&t.tout?`${t.tin.slice(5,16)} → ${t.tout.slice(11,16)}`:'';
+  return `<div class="tr">
+    <div class="top"><span class="bk" style="color:${col(t.book)}">${showBook?esc(t.book):'trade'}</span>
+      <span class="r ${cls}">${sg(t.R)}R</span></div>
+    <div class="mid"><span>${dur}</span><span>in ${t.px_in}</span><span>out ${t.px_out}</span>
+      ${t.conf!=null?`<span>said ${t.conf}% sure</span>`:''}</div>
+    <div class="why"><b>in:</b> ${esc(t.why_in)||'—'} &nbsp; <b>out:</b> ${esc(t.why_out)||'—'}</div></div>`;
+}
+
+function lineChart(svg,H,names,keyset,capline){
+  svg.innerHTML='';
+  if(!H||H.length<2){svg.innerHTML=`<text x="170" y="88" fill="#75858D" font-size="11" text-anchor="middle">not enough data yet</text>`;return}
+  let lo=1e9,hi=-1e9;
+  H.forEach(h=>names.forEach(n=>{const v=h.eq[n];if(v!=null){if(v<lo)lo=v;if(v>hi)hi=v}}));
+  if(lo>0)lo=0; if(hi<0)hi=0;
+  const p=(hi-lo)*.1||1; lo-=p; hi+=p;
+  const X=i=>i/(H.length-1)*340, Y=v=>175-(v-lo)/(hi-lo)*175;
+  let g=`<line x1="0" y1="${Y(0)}" x2="340" y2="${Y(0)}" stroke="#2B3940" stroke-dasharray="3 4"/>`;
+  names.forEach(n=>{
+    const pts=H.map((h,i)=>h.eq[n]!=null?X(i).toFixed(1)+','+Y(h.eq[n]).toFixed(1):null).filter(Boolean).join(' ');
+    const key=keyset.includes(n);
+    g+=`<polyline points="${pts}" fill="none" stroke="${col(n)}" stroke-width="${key?1.9:.9}" opacity="${key?1:.35}" vector-effect="non-scaling-stroke"/>`;
+  });
+  svg.innerHTML=g;
+}
+
+function drawBook(){
+  if(!D)return;
+  const names=D.books.map(b=>b.name);
+  if(!sel||!names.includes(sel))sel=D.books[0].name;
+  $('picker').innerHTML=names.map(n=>
+    `<button class="${n===sel?'on':''}" data-n="${n}">${n}</button>`).join('');
+  $('picker').querySelectorAll('button').forEach(b=>b.onclick=()=>{sel=b.dataset.n;drawBook()});
+
+  const b=D.books.find(x=>x.name===sel);
+  $('bkhint').style.display='';
+  $('hint').innerHTML=b.hint?`<b style="color:${col(sel)}">${esc(sel)}</b> — ${esc(b.hint)}`
+    :`<b style="color:${col(sel)}">${esc(sel)}</b> — control book, no AI hint.`;
+  $('bkstat').innerHTML=[['Return',sg(b.ret)+'%',b.ret>=0?'pos':'neg'],['Trades',b.n,''],
+    ['Win',b.n?b.win+'%':'—',''],['Avg R',b.n?sg(b.avgR):'—',b.avgR>=0?'pos':'neg'],
+    ['Best',b.n?sg(b.best)+'R':'—','pos'],['Worst',b.n?sg(b.worst)+'R':'—','neg'],
+    ['Drawdown',b.dd.toFixed(0)+'%','']]
+    .map(([k,v,c])=>`<div><div class="lbl">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+
+  lineChart($('bchart'),D.history,[sel,'HODL','CROSS'],[sel]);
+  $('bleg').innerHTML=[[sel,col(sel)],['HODL',C.HODL],['CROSS',C.CROSS]].map(([n,c])=>
+    `<span><i style="background:${c}"></i>${n}</span>`).join('');
+
+  const mine=(D.trades||[]).filter(t=>t.book===sel);
+  $('bkcount').textContent=mine.length+' closed';
+  let html = b.open ? `<div class="tr open"><div class="top"><span class="bk" style="color:var(--good)">OPEN NOW</span>
+      <span class="r ${b.open.upl>=0?'pos':'neg'}">${sg(b.open.upl)}%</span></div>
+      <div class="mid"><span>since ${b.open.t.slice(5,16)}</span><span>in ${b.open.px_in}</span><span>stop ${b.open.stop}</span></div>
+      <div class="why"><b>in:</b> ${esc(b.open.why)||'—'}</div></div>` : '';
+  html += mine.length?mine.map(t=>tradeRow(t,false)).join(''):
+    (b.open?'':'<div class="empty">No trades yet.</div>');
+  $('bklist').innerHTML=html;
+}
+
+function drawTrades(){
+  if(!D)return;
+  const T=D.trades||[];
+  const opts=['ALL','AI ONLY','CONTROLS','WINS','LOSSES'];
+  $('filt').innerHTML=opts.map(o=>`<button class="${o===filt?'on':''}" data-f="${o}">${o}</button>`).join('');
+  $('filt').querySelectorAll('button').forEach(b=>b.onclick=()=>{filt=b.dataset.f;drawTrades()});
+  const ctrl=['RANDOM','HODL','CROSS'];
+  let L=T.filter(t=>filt==='ALL'||(filt==='AI ONLY'&&!ctrl.includes(t.book))
+    ||(filt==='CONTROLS'&&ctrl.includes(t.book))||(filt==='WINS'&&t.R>0)||(filt==='LOSSES'&&t.R<=0));
+  $('trcount').textContent=L.length+' shown';
+  $('trlist').innerHTML=L.length?L.map(t=>tradeRow(t,true)).join('')
+    :'<div class="empty">Nothing matches.<br>The bots may not have traded yet.</div>';
+}
 
 async function tick(){
-  let d; try{ d=await (await fetch('data.json?'+Date.now())).json(); }
+  try{ D=await (await fetch('data.json?'+Date.now())).json(); }
   catch(e){ $('upd').textContent='no data yet'; return; }
 
-  $('sym').textContent=d.symbol+' · '+d.timeframe;
-  $('price').textContent='$'+d.price.toLocaleString(undefined,{minimumFractionDigits:2});
-  const age=(Date.now()-new Date(d.updated))/6e4;
+  $('sym').textContent=D.symbol+' · '+D.timeframe;
+  $('price').textContent='$'+D.price.toLocaleString(undefined,{minimumFractionDigits:2});
+  const age=(Date.now()-new Date(D.updated))/6e4;
   $('upd').textContent=age<90?Math.round(age)+'m ago':Math.round(age/60)+'h ago';
   $('upd').className='t'+(age>150?' stale':'');
-  $('mdl').textContent=d.model;
-  $('health').textContent=d.calls+' calls · '+d.fails+' failed'+
-    (d.calls?' ('+(100*d.fails/(d.calls+d.fails)).toFixed(1)+'%)':'');
+  $('mdl').textContent=D.model;
+  $('health').textContent=D.calls+' calls · '+D.fails+' failed'+
+    (D.calls+D.fails?' ('+(100*D.fails/(D.calls+D.fails)).toFixed(1)+'%)':'');
 
-  // noise floor
-  $('floor').textContent = d.floor ? '±'+d.floor.toFixed(1)+'%' : '—';
-  $('floorc').textContent = d.floor
-    ? `Identical twins finish this far apart on average. Any book that hasn't beaten ${d.floor.toFixed(1)}% has shown nothing.`
+  $('floor').textContent=D.floor?'±'+D.floor.toFixed(1)+'%':'—';
+  $('floorc').textContent=D.floor
+    ? `Identical twins finish this far apart on average. Any book that hasn't beaten ${D.floor.toFixed(1)}% has shown nothing.`
     : 'Waiting for the twins to separate.';
 
-  const tot=d.phaseA+d.phaseB, a=Math.min(d.bar,d.phaseA), b=Math.max(0,d.bar-d.phaseA);
-  $('ba').style.width=(a/tot*100)+'%'; $('bb').style.width=(b/tot*100)+'%';
-  $('pmsg').innerHTML = d.done ? 'Experiment complete.'
-    : d.phase==='A' ? `Phase A · hour ${d.bar} of ${d.phaseA}. <span class="warn">Leaderboard is not evidence yet.</span>`
-    : `Phase B · re-testing <b style="color:var(--amber)">${d.winner}</b> alone on prices it has never seen.`;
+  const tot=D.phaseA+D.phaseB, a=Math.min(D.bar,D.phaseA), b2=Math.max(0,D.bar-D.phaseA);
+  $('ba').style.width=(a/tot*100)+'%'; $('bb').style.width=(b2/tot*100)+'%';
+  $('pmsg').innerHTML=D.done?'Experiment complete.'
+    :D.phase==='A'?`Phase A · hour ${D.bar} of ${D.phaseA}. <span class="warn">Leaderboard is not evidence yet.</span>`
+    :`Phase B · re-testing <b style="color:var(--amber)">${D.winner}</b> on prices it has never seen.`;
 
-  // chart
-  const H=d.history||[], svg=$('chart'); svg.innerHTML='';
-  if(H.length>1){
-    const ns=d.books.map(x=>x.name);
-    let lo=1e9,hi=-1e9;
-    H.forEach(h=>ns.forEach(n=>{const v=h.eq[n];if(v!=null){if(v<lo)lo=v;if(v>hi)hi=v}}));
-    const p=(hi-lo)*.08||1; lo-=p; hi+=p;
-    const X=i=>i/(H.length-1)*340, Y=v=>180-(v-lo)/(hi-lo)*180;
-    let g=`<line x1="0" y1="${Y(d.capital)}" x2="340" y2="${Y(d.capital)}" stroke="#2B3940" stroke-dasharray="3 4"/>`;
-    ns.forEach(n=>{
-      const pts=H.map((h,i)=>h.eq[n]!=null?X(i).toFixed(1)+','+Y(h.eq[n]).toFixed(1):null).filter(Boolean).join(' ');
-      const key=['CROSS','HODL','RANDOM'].includes(n)||n===d.winner;
-      g+=`<polyline points="${pts}" fill="none" stroke="${col(n)}" stroke-width="${key?1.8:.9}" opacity="${key?1:.4}" vector-effect="non-scaling-stroke"/>`;
-    });
-    svg.innerHTML=g;
-    $('leg').innerHTML=['CROSS','RANDOM','HODL'].map(n=>
-      `<span><i style="background:${C[n]}"></i>${n}</span>`).join('')+
-      `<span><i style="background:#8FA3AD;opacity:.4"></i>20 ai books</span>`;
-  }
+  lineChart($('chart'),D.history,D.books.map(x=>x.name),['CROSS','HODL','RANDOM',D.winner].filter(Boolean));
+  $('leg').innerHTML=['CROSS','RANDOM','HODL'].map(n=>`<span><i style="background:${C[n]}"></i>${n}</span>`).join('')
+    +`<span><i style="background:#8FA3AD;opacity:.4"></i>20 ai books</span>`;
 
-  // table
-  $('tb').innerHTML=d.books.map(x=>{
-    const noise=Math.abs(x.ret)<d.floor&&x.kind==='ai';
-    return `<tr class="${x.kind!=='ai'?'ctrl':''}${x.name===d.winner?' win':''}${noise?' noise':''}">
-      <td>${x.name}${x.inpos?'<span class="dot"></span>':''}</td>
-      <td>${x.eq.toFixed(2)}</td><td class="${x.ret>=0?'pos':'neg'}">${sg(x.ret)}%</td>
+  $('tb').innerHTML=D.books.map(x=>{
+    const noise=Math.abs(x.ret)<D.floor&&x.kind==='ai';
+    return `<tr class="clk ${x.kind!=='ai'?'ctrl':''}${x.name===D.winner?' win':''}${noise?' noise':''}" data-n="${x.name}">
+      <td>${x.name}${x.open?'<span class="dot"></span>':''}</td>
+      <td class="${x.ret>=0?'pos':'neg'}">${sg(x.ret)}%</td>
       <td>${x.n}</td><td>${x.n?x.win+'%':'—'}</td>
       <td class="${x.avgR>=0?'pos':'neg'}">${x.n?sg(x.avgR):'—'}</td>
       <td>${x.dd.toFixed(0)}%</td></tr>`}).join('');
+  $('tb').querySelectorAll('tr.clk').forEach(r=>r.onclick=()=>{
+    sel=r.dataset.n;
+    document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x.dataset.t==='bk'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.id==='bk'));
+    drawBook(); window.scrollTo(0,0);
+  });
 
-  // twin gaps
-  if(d.twins&&d.twins.length){
+  if(D.twins&&D.twins.length){
     $('twcard').style.display='';
-    const mx=Math.max(...d.twins.map(t=>t.gap),1);
-    $('tw').innerHTML=d.twins.map(t=>`<div class="tw"><span class="s">${t.s}</span>
+    const mx=Math.max(...D.twins.map(t=>t.gap),1);
+    $('tw').innerHTML=D.twins.map(t=>`<div class="tw"><span class="s">${t.s}</span>
       <span class="bar"><i style="left:0;width:${t.gap/mx*100}%"></i></span>
       <span class="g">${t.gap.toFixed(1)}%</span></div>`).join('')
       +`<div class="msg" style="margin-top:8px">Each bar is the distance between two runs of the same strategy. Nothing differs but chance, so this is pure measurement error.</div>`;
   }
-
-  if(d.calib&&d.calib.length){
+  if(D.calib&&D.calib.length){
     $('calcard').style.display='';
-    $('cal').innerHTML=d.calib.map(c=>`<div class="r"><span class="said">${c.band}%</span>
+    $('cal').innerHTML=D.calib.map(c=>`<div class="r"><span class="said">${c.band}%</span>
       <span class="bar"><i style="width:${c.hit}%"></i></span>
       <span class="was">${c.hit}% <span style="color:var(--dim)">n${c.n}</span></span></div>`).join('')
       +`<div class="msg" style="margin-top:8px">Left: how sure it said it was. Right: how often it was actually right.</div>`;
   }
 
-  const R=d.recent||[];
+  const R=D.recent||[];
   $('log').innerHTML=R.length?R.map(r=>
-    `<div class="r"><span class="b">${r.book}</span><span class="a ${r.act}">${r.act}</span><span class="w"></span></div>`).join('')
+    `<div class="r"><span class="b">${esc(r.book)}</span><span class="a ${r.act}">${esc(r.act)}</span><span class="w">${esc(r.why)}</span></div>`).join('')
     :'<div class="empty">nothing yet</div>';
-  document.querySelectorAll('.log .w').forEach((el,i)=>el.textContent=R[i].why||'');
+
+  drawTrades();
+  if($('bk').classList.contains('on'))drawBook();
 }
 tick(); setInterval(tick,60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
