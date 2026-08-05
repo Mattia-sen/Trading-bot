@@ -50,9 +50,9 @@ TRADES_MAX   = 500           # trades sent to the dashboard
 
 # ─── swap the model here. Only place the provider appears. ───
 PROVIDER    = "gemini"
-GEMINI_M    = "gemini-2.5-flash"
+GEMINI_M    = "gemini-2.5-flash-lite"
 ANTHROPIC_M = "claude-sonnet-4-6"
-CALL_GAP    = 5.0
+CALL_GAP    = 8.0
 
 EXCHANGES = ["kraken", "coinbaseexchange", "bitstamp"]
 
@@ -268,6 +268,7 @@ def step(s, candles):
         except Exception as e:
             s["fails"] += 1
             note(name, "FAIL", str(e)[:70])
+            time.sleep(CALL_GAP)
             continue
         time.sleep(CALL_GAP)
 
