@@ -154,7 +154,7 @@ def call_model(prompt):
     """Returns a parsed dict. Raises on any failure - the caller counts it."""
     if PROVIDER == "gemini":
         r = requests.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_M}:generateContent",
+            f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_M}:generateContent",
             headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"].strip(),
                      "content-type": "application/json"},
             json={"contents": [{"parts": [{"text": prompt}]}],
