@@ -12,8 +12,6 @@ THE EXPERIMENT
   answers the same question slightly differently each time.
 
   The gap between twins IS the noise floor - measured, not guessed.
-  If TREND-A and TREND-B finish 12% apart, nothing means anything until
-  it beats 12%. That number is on the dashboard.
 
 RULES
   One BUY per book per day. Selling is unlimited.
@@ -48,12 +46,13 @@ MIN_NOTIONAL = 5.0
 PHASE_A_BARS = 720           # ~30 days of hourly bars
 PHASE_B_BARS = 720
 HISTORY_MAX  = 800
+TRADES_MAX   = 500           # trades sent to the dashboard
 
 # ─── swap the model here. Only place the provider appears. ───
-PROVIDER    = "gemini"                 # "gemini" or "anthropic"
-GEMINI_M    = "gemini-2.5-flash"       # free tier
-ANTHROPIC_M = "claude-sonnet-4-6"      # paid, if you ever switch
-CALL_GAP    = 5.0                      # seconds between calls (free tier ~10-15/min)
+PROVIDER    = "gemini"
+GEMINI_M    = "gemini-2.5-flash"
+ANTHROPIC_M = "claude-sonnet-4-6"
+CALL_GAP    = 5.0
 
 EXCHANGES = ["kraken", "coinbaseexchange", "bitstamp"]
 
@@ -106,7 +105,7 @@ def eq(b, px):
 
 # ────────────────────────── paper execution ─────────────────────────
 
-def buy(b, px, stop, day, conf=None):
+def buy(b, px, stop, day, ts, conf=None, why=""):
     """Risk rule sizes the trade, then no-leverage caps it. AI cannot override."""
     if b["last_buy"] == day:
         return False                       # one buy per day. Hard rule.
@@ -122,11 +121,13 @@ def buy(b, px, stop, day, conf=None):
     if cost + fee > b["cash"]:
         return False
     b["cash"] -= cost + fee
-    b["pos"]   = dict(qty=qty, entry=fill, stop=stop, risk=qty*dist, conf=conf)
+    b["pos"]   = dict(qty=qty, entry=fill, stop=stop, risk=qty*dist,
+                      conf=conf, t=ts, why=why)
     b["last_buy"] = day
     return True
 
-def sell(b, px):
+def sell(b, px, ts, why=""):
+    """Records a full trade: when in, when out, at what price, why."""
     p = b["pos"]
     if not p:
         return 0.0
@@ -135,8 +136,13 @@ def sell(b, px):
     fee   = gross * FEE_RATE
     b["cash"] += gross - fee
     pnl = (fill - p["entry"]) * p["qty"] - fee
-    b["trades"].append(dict(pnl=round(pnl, 4),
-                            R=round(pnl / p["risk"], 3) if p["risk"] else 0))
+    b["trades"].append(dict(
+        tin=p.get("t", ""), tout=ts,
+        px_in=round(p["entry"], 2), px_out=round(fill, 2),
+        qty=round(p["qty"], 6),
+        pnl=round(pnl, 4), R=round(pnl / p["risk"], 2) if p["risk"] else 0,
+        conf=p.get("conf"),
+        why_in=p.get("why", "")[:60], why_out=why[:60]))
     if p.get("conf") is not None:
         b["confs"].append(dict(conf=p["conf"], won=pnl > 0))
     b["pos"] = None
@@ -220,7 +226,7 @@ def step(s, candles):
     for b in books.values():
         if b["pos"] and b["name"] != "HODL" and low <= b["pos"]["stop"]:
             sp = b["pos"]["stop"]
-            pnl = sell(b, sp)
+            pnl = sell(b, sp, iso, "stop hit")
             note(b["name"], "STOP", f"{sp:.2f} ({pnl:+.2f})")
 
     # HODL
@@ -229,17 +235,18 @@ def step(s, candles):
         fill = px * (1 + SLIPPAGE)
         qty  = h["cash"] / (fill * (1 + FEE_RATE))
         h["cash"] -= qty * fill * (1 + FEE_RATE)
-        h["pos"] = dict(qty=qty, entry=fill, stop=0.0, risk=1e9)
+        h["pos"] = dict(qty=qty, entry=fill, stop=0.0, risk=1e9,
+                        t=iso, why="bought once, holds forever")
 
     # CROSS - no AI, free to run, and it might beat everything
     cb = books["CROSS"]
     if len(candles) >= 30:
         fast, slow = sma(candles, 10), sma(candles, 30)
         if fast > slow and not cb["pos"]:
-            if buy(cb, px, px - STOP_MULT * a, day):
+            if buy(cb, px, px - STOP_MULT * a, day, iso, why="10 crossed above 30"):
                 note("CROSS", "BUY", "10 crossed above 30")
         elif fast < slow and cb["pos"]:
-            pnl = sell(cb, px)
+            pnl = sell(cb, px, iso, "crossed back below")
             note("CROSS", "CLOSE", f"crossed back ({pnl:+.2f})")
 
     # the 20 AI books
@@ -273,11 +280,11 @@ def step(s, candles):
             if not can_buy:
                 s["fails"] += 1                    # tried to break the daily rule
                 note(name, "BLOCK", "already bought today")
-            elif buy(b, px, px - STOP_MULT * a, day, conf):
+            elif buy(b, px, px - STOP_MULT * a, day, iso, conf, why):
                 entered = True
                 note(name, "BUY", why)
         elif act == "close" and b["pos"]:
-            pnl = sell(b, px)
+            pnl = sell(b, px, iso, why)
             note(name, "CLOSE", f"{why} ({pnl:+.2f})")
         elif act not in ("buy", "hold", "close"):
             s["fails"] += 1
@@ -286,9 +293,9 @@ def step(s, candles):
     # RANDOM mirrors entry timing, flips a coin
     rb = books["RANDOM"]
     if entered and not rb["pos"] and random.random() < 0.5:
-        buy(rb, px, px - STOP_MULT * a, day)
+        buy(rb, px, px - STOP_MULT * a, day, iso, why="coin flip: enter")
     elif rb["pos"] and random.random() < 0.04:
-        sell(rb, px)
+        sell(rb, px, iso, "coin flip: exit")
 
     for b in books.values():
         b["peak"] = max(b["peak"], eq(b, px))
@@ -312,17 +319,29 @@ def step(s, candles):
 
 def emit(s, px):
     books = s["books"]
-    rows = []
+    rows, all_trades = [], []
+
     for n, b in books.items():
         tr, e = b["trades"], eq(b, px)
+        p = b["pos"]
         rows.append(dict(
-            name=n, kind=b["kind"], eq=round(e, 2),
+            name=n, kind=b["kind"],
             ret=round((e / CAPITAL - 1) * 100, 2), n=len(tr),
             win=round(100 * sum(1 for t in tr if t["pnl"] > 0) / len(tr)) if tr else 0,
             avgR=round(statistics.fmean([t["R"] for t in tr]), 2) if tr else 0,
+            best=round(max((t["R"] for t in tr), default=0), 2),
+            worst=round(min((t["R"] for t in tr), default=0), 2),
             dd=round((b["peak"] - e) / b["peak"] * 100, 1) if b["peak"] else 0,
-            inpos=bool(b["pos"])))
-    rows.sort(key=lambda x: -x["eq"])
+            hint=HINT.get(n.rsplit("-", 1)[0], ""),
+            open=dict(px_in=round(p["entry"], 2), t=p.get("t", ""),
+                      why=p.get("why", ""), stop=round(p["stop"], 2),
+                      upl=round((px - p["entry"]) / p["entry"] * 100, 2)) if p else None))
+        for t in tr:
+            all_trades.append(dict(book=n, **t))
+
+    rows.sort(key=lambda x: -x["ret"])
+    all_trades.sort(key=lambda t: t["tout"], reverse=True)
+    all_trades = all_trades[:TRADES_MAX]
 
     # THE measurement: how far apart do identical twins finish?
     gaps = []
@@ -330,7 +349,8 @@ def emit(s, px):
         A, B = books.get(f"{name}-A"), books.get(f"{name}-B")
         if A and B:
             ea, eb = eq(A, px), eq(B, px)
-            gaps.append(dict(s=name, a=round(ea, 2), b=round(eb, 2),
+            gaps.append(dict(s=name, a=round((ea/CAPITAL-1)*100, 2),
+                             b=round((eb/CAPITAL-1)*100, 2),
                              gap=round(abs(ea - eb) / CAPITAL * 100, 2)))
     floor = round(statistics.median([g["gap"] for g in gaps]), 2) if gaps else 0
 
@@ -350,8 +370,10 @@ def emit(s, px):
         phaseA=PHASE_A_BARS, phaseB=PHASE_B_BARS,
         provider=PROVIDER, model=GEMINI_M if PROVIDER == "gemini" else ANTHROPIC_M,
         calls=s["calls"], today=s["calls_today"], fails=s["fails"],
-        floor=floor, twins=gaps, books=rows, calib=calib,
-        history=[dict(t=h["t"][5:], px=h["px"], eq=h["eq"]) for h in s["history"]],
+        floor=floor, twins=gaps, books=rows, calib=calib, trades=all_trades,
+        history=[dict(t=h["t"][5:], px=h["px"],
+                      eq={k: round((v/CAPITAL-1)*100, 2) for k, v in h["eq"].items()})
+                 for h in s["history"]],
         recent=s["recent"][:25]), separators=(",", ":")))
 
 # ─────────────────────────── prices ─────────────────────────────────
