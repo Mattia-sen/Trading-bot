@@ -155,7 +155,7 @@ def call_model(prompt):
     if PROVIDER == "gemini":
         r = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_M}:generateContent",
-            headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"],
+            headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"].strip(),
                      "content-type": "application/json"},
             json={"contents": [{"parts": [{"text": prompt}]}],
                   "generationConfig": {"maxOutputTokens": 400, "temperature": 1.0,
@@ -165,7 +165,7 @@ def call_model(prompt):
         if r.status_code != 200:
             if r.status_code == 429:
                 time.sleep(20)
-            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:150]}")
+            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
         txt = r.json()["candidates"][0]["content"]["parts"][0]["text"]
     else:
         r = requests.post("https://api.anthropic.com/v1/messages",
