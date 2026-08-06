@@ -26,26 +26,27 @@ jobs:
       - name: Install
         run: pip install --quiet ccxt requests
 
+      # never prints the key itself, only its shape
       - name: Check key
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
-          echo "length: ${#GEMINI_API_KEY}"
-          case "$GEMINI_API_KEY" in
-            AQ.*|AIza*) echo "prefix: ok" ;;
+          echo "length: ${#GROQ_API_KEY}"
+          case "$GROQ_API_KEY" in
+            gsk_*) echo "prefix: ok" ;;
             "")    echo "prefix: EMPTY SECRET" ;;
-            *)     echo "prefix: wrong, does not start with AIza" ;;
+            *)     echo "prefix: does not start with gsk_" ;;
           esac
 
       - name: Run one hour
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python bot.py
 
       # state.json and docs/data.json are GENERATED, never hand-edited.
-      # So on collision we always keep ours - no merge, no rebase, no conflict.
-      # Everything else (bot.py, index.html) is taken fresh from the remote,
-      # so an edit made in the browser mid-run is never overwritten.
+      # On collision we always keep ours - no merge, no rebase, no conflict.
+      # Everything else (bot.py, index.html) comes fresh from the remote, so an
+      # edit made in the browser mid-run is never overwritten.
       - name: Save results
         run: |
           git config user.name  "trading-bot"
