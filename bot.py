@@ -46,13 +46,17 @@ MIN_NOTIONAL = 5.0
 PHASE_A_BARS = 720           # ~30 days of hourly bars
 PHASE_B_BARS = 720
 HISTORY_MAX  = 800
-TRADES_MAX   = 500           # trades sent to the dashboard
+TRADES_MAX   = 500
 
 # ─── swap the model here. Only place the provider appears. ───
-PROVIDER    = "gemini"
-GEMINI_M    = "gemini-2.5-flash-lite"
+# groq      : free, 30 req/min, 14400/day, no card. Secret: GROQ_API_KEY
+# gemini    : free tier, but the new AQ. key format may not work. GEMINI_API_KEY
+# anthropic : paid. ANTHROPIC_API_KEY
+PROVIDER    = "groq"
+GROQ_M      = "llama-3.1-8b-instant"
+GEMINI_M    = "gemini-2.5-flash"
 ANTHROPIC_M = "claude-sonnet-4-6"
-CALL_GAP    = 8.0
+CALL_GAP    = 3.0            # seconds between calls. Groq allows one per 2s.
 
 EXCHANGES = ["kraken", "coinbaseexchange", "bitstamp"]
 
@@ -152,7 +156,21 @@ def sell(b, px, ts, why=""):
 
 def call_model(prompt):
     """Returns a parsed dict. Raises on any failure - the caller counts it."""
-    if PROVIDER == "gemini":
+    if PROVIDER == "groq":
+        r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": "Bearer " + os.environ["GROQ_API_KEY"].strip(),
+                     "content-type": "application/json"},
+            json={"model": GROQ_M, "max_tokens": 400, "temperature": 1.0,
+                  "response_format": {"type": "json_object"},
+                  "messages": [{"role": "user", "content": prompt}]},
+            timeout=45)
+        if r.status_code != 200:
+            if r.status_code == 429:
+                time.sleep(10)
+            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
+        txt = r.json()["choices"][0]["message"]["content"]
+
+    elif PROVIDER == "gemini":
         r = requests.post(
             f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_M}:generateContent",
             headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"].strip(),
@@ -164,18 +182,20 @@ def call_model(prompt):
             timeout=45)
         if r.status_code != 200:
             if r.status_code == 429:
-                time.sleep(20)
+                time.sleep(10)
             raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
         txt = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+
     else:
         r = requests.post("https://api.anthropic.com/v1/messages",
-            headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"],
+            headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"].strip(),
                      "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
             json={"model": ANTHROPIC_M, "max_tokens": 400,
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=45)
-        r.raise_for_status()
+        if r.status_code != 200:
+            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
         txt = "".join(x.get("text", "") for x in r.json()["content"])
 
     txt = txt.replace("```json", "").replace("```", "").strip()
@@ -202,7 +222,7 @@ You may buy at most once per day.
 
 Position size is decided for you by a fixed risk rule. Do not choose size.
 
-Reply with ONLY this JSON object, nothing else:
+Reply with ONLY a json object in exactly this form, nothing else:
 {{"action": {opts}, "confidence": <0-100>, "reason": "<max 10 words>"}}"""
 
 # ──────────────────────────── one bar ───────────────────────────────
@@ -268,7 +288,7 @@ def step(s, candles):
         except Exception as e:
             s["fails"] += 1
             note(name, "FAIL", str(e)[:70])
-            time.sleep(CALL_GAP)
+            time.sleep(CALL_GAP)          # pace failures too, or one 429 cascades
             continue
         time.sleep(CALL_GAP)
 
@@ -369,7 +389,8 @@ def emit(s, px):
         symbol=SYMBOL, timeframe=TIMEFRAME, price=round(px, 2), capital=CAPITAL,
         bar=s["bar"], phase=s["phase"], winner=s["winner"], done=s["done"],
         phaseA=PHASE_A_BARS, phaseB=PHASE_B_BARS,
-        provider=PROVIDER, model=GEMINI_M if PROVIDER == "gemini" else ANTHROPIC_M,
+        provider=PROVIDER,
+        model=GROQ_M if PROVIDER == "groq" else (GEMINI_M if PROVIDER == "gemini" else ANTHROPIC_M),
         calls=s["calls"], today=s["calls_today"], fails=s["fails"],
         floor=floor, twins=gaps, books=rows, calib=calib, trades=all_trades,
         history=[dict(t=h["t"][5:], px=h["px"],
@@ -413,3 +434,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
