@@ -56,7 +56,7 @@ PROVIDER    = "groq"
 GROQ_M      = "llama-3.1-8b-instant"
 GEMINI_M    = "gemini-2.5-flash"
 ANTHROPIC_M = "claude-sonnet-4-6"
-CALL_GAP    = 3.0            # seconds between calls. Groq allows one per 2s.
+CALL_GAP    = 7.0            # seconds between calls. Groq allows one per 2s.
 
 EXCHANGES = ["kraken", "coinbaseexchange", "bitstamp"]
 
