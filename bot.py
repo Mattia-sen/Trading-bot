@@ -2,26 +2,29 @@
 """
 bot.py - runs ONCE per hour, called by GitHub Actions. Then exits.
 
-SIMULATION ONLY. There is no exchange account, no exchange API key, and no
-order function anywhere in this file. It reads public price data that needs
-no login. Nothing here can spend money.
+SIMULATION ONLY. No exchange account, no exchange API key, no order function.
+It reads public price data that needs no login. Nothing here can spend money.
+
+EVERYTHING IS IN EUROS. Market is ETH/EUR, so no conversion anywhere.
 
 THE EXPERIMENT
-  10 strategies. Each runs TWICE as an identical twin (A and B).
-  Same prompt, same rules, same prices. They differ only because the AI
+  10 strategies, each run TWICE as identical twins (A and B).
+  Same prompt, same rules, same prices. They differ only because the model
   answers the same question slightly differently each time.
-
   The gap between twins IS the noise floor - measured, not guessed.
 
 RULES
-  One BUY per book per day. Selling is unlimited.
+  One BUY per book per day. Selling is unlimited. Bots choose when to trade;
+  nothing is forced.
   Long or flat only. No shorting, no leverage, no margin.
-  Position size set by a 1% risk rule the AI cannot override.
+  Position size set by a 1% risk rule the model cannot override.
 
 CONTROLS (do not delete)
   RANDOM - coin flip
-  HODL   - buy once, never sell
-  CROSS  - moving-average crossover, no AI at all. It may well win.
+  HODL   - buys once and NEVER sells. That is the point: it is the
+           "what if you did nothing" benchmark. If it beats the thinking
+           bots, thinking is not paying for itself.
+  CROSS  - moving-average crossover, no AI at all.
 """
 
 import os, json, time, random, statistics
@@ -33,10 +36,10 @@ import requests
 
 # ───────────────────────────── settings ─────────────────────────────
 
-SYMBOL       = "ETH/USD"
+SYMBOL       = "ETH/EUR"     # euros natively. No conversion, no fudge.
 TIMEFRAME    = "1h"
-CAPITAL      = 100.0
-RISK_PCT     = 0.01
+CAPITAL      = 100.0         # euros
+RISK_PCT     = 0.01          # 1% = 1 EUR risked per trade
 FEE_RATE     = 0.001
 SLIPPAGE     = 0.0005
 ATR_LEN      = 14
@@ -46,24 +49,23 @@ MIN_NOTIONAL = 5.0
 PHASE_A_BARS = 720           # ~30 days of hourly bars
 PHASE_B_BARS = 720
 HISTORY_MAX  = 800
+CANDLE_MAX   = 500           # OHLC kept for the chart tab
 TRADES_MAX   = 500
 
 # ─── swap the model here. Only place the provider appears. ───
-# groq      : free, 30 req/min, 14400/day, no card. Secret: GROQ_API_KEY
-# gemini    : free tier, but the new AQ. key format may not work. GEMINI_API_KEY
-# anthropic : paid. ANTHROPIC_API_KEY
 PROVIDER    = "groq"
 GROQ_M      = "llama-3.1-8b-instant"
 GEMINI_M    = "gemini-2.5-flash"
 ANTHROPIC_M = "claude-sonnet-4-6"
-CALL_GAP    = 7.0            # seconds between calls. Groq allows one per 2s.
+# Groq free tier caps TOKENS per minute (6000), not just requests.
+# 20 books x ~600 tokens needs ~140s of spacing to stay under it.
+CALL_GAP    = 7.0
 
 EXCHANGES = ["kraken", "coinbaseexchange", "bitstamp"]
 
 STATE = Path("state.json")
 DATA  = Path("docs/data.json")
 
-# ─── 10 strategies. Everything identical except one attention hint. ───
 STRATEGIES = [
     ("BASE",   ""),   # control: no hint. If nothing beats this, hints do nothing.
     ("TREND",  "Pay attention to the overall direction of price across the whole window."),
@@ -79,6 +81,7 @@ STRATEGIES = [
 TWINS = ["A", "B"]
 BOOKS = [f"{n}-{t}" for n, _ in STRATEGIES for t in TWINS]
 HINT  = {n: h for n, h in STRATEGIES}
+CTRLS = ("RANDOM", "HODL", "CROSS")
 
 # ───────────────────────────── state ────────────────────────────────
 
@@ -88,13 +91,15 @@ def blank(name, kind="ai"):
 
 def load():
     if STATE.exists():
-        return json.loads(STATE.read_text())
+        s = json.loads(STATE.read_text())
+        s.setdefault("candles", [])
+        return s
     books = {b: blank(b) for b in BOOKS}
-    for c in ("RANDOM", "HODL", "CROSS"):
+    for c in CTRLS:
         books[c] = blank(c, kind="ctrl")
     return dict(bar=0, last_ts=None, phase="A", winner=None, done=False,
                 calls=0, calls_today=0, day="", fails=0, books=books,
-                history=[], recent=[])
+                history=[], candles=[], recent=[])
 
 def atr(c, n=ATR_LEN):
     tr = [max(c[i][2]-c[i][3], abs(c[i][2]-c[i-1][4]), abs(c[i][3]-c[i-1][4]))
@@ -105,12 +110,13 @@ def sma(c, n):
     return statistics.fmean([x[4] for x in c[-n:]])
 
 def eq(b, px):
+    """Total euros this book is worth right now: cash plus any open position."""
     return b["cash"] + (b["pos"]["qty"]*px if b["pos"] else 0.0)
 
 # ────────────────────────── paper execution ─────────────────────────
 
 def buy(b, px, stop, day, ts, conf=None, why=""):
-    """Risk rule sizes the trade, then no-leverage caps it. AI cannot override."""
+    """Risk rule sizes the trade, then no-leverage caps it. Model cannot override."""
     if b["last_buy"] == day:
         return False                       # one buy per day. Hard rule.
     e, dist = eq(b, px), px - stop
@@ -126,12 +132,12 @@ def buy(b, px, stop, day, ts, conf=None, why=""):
         return False
     b["cash"] -= cost + fee
     b["pos"]   = dict(qty=qty, entry=fill, stop=stop, risk=qty*dist,
-                      conf=conf, t=ts, why=why)
+                      conf=conf, t=ts, why=why, eq_in=round(e, 2))
     b["last_buy"] = day
     return True
 
 def sell(b, px, ts, why=""):
-    """Records a full trade: when in, when out, at what price, why."""
+    """Records the full trade including the stop it was protected by."""
     p = b["pos"]
     if not p:
         return 0.0
@@ -143,8 +149,14 @@ def sell(b, px, ts, why=""):
     b["trades"].append(dict(
         tin=p.get("t", ""), tout=ts,
         px_in=round(p["entry"], 2), px_out=round(fill, 2),
+        stop=round(p["stop"], 2),
         qty=round(p["qty"], 6),
-        pnl=round(pnl, 4), R=round(pnl / p["risk"], 2) if p["risk"] else 0,
+        size=round(p["qty"] * p["entry"], 2),      # euros put to work
+        risk=round(p["risk"], 2),                  # euros at risk
+        pnl=round(pnl, 2),                         # euros won or lost
+        R=round(pnl / p["risk"], 2) if p["risk"] else 0,
+        eq_in=p.get("eq_in", CAPITAL),
+        eq_out=round(b["cash"], 2),                # euros after closing
         conf=p.get("conf"),
         why_in=p.get("why", "")[:60], why_out=why[:60]))
     if p.get("conf") is not None:
@@ -206,12 +218,13 @@ def build_prompt(strat, b, candles, a, can_buy):
     px = candles[-1][4]
     p  = b["pos"]
     if p:
-        pos  = f"HOLDING since {p['entry']:.2f}. Stop at {p['stop']:.2f}."
+        pos  = (f"HOLDING since {p['entry']:.2f}. Your stop is at {p['stop']:.2f}. "
+                f"Price is currently {'above' if px > p['stop'] else 'BELOW'} that stop.")
         opts = '"hold" or "close"'
     else:
         pos  = "FLAT (no position)."
         opts = '"hold" or "buy"' if can_buy else '"hold" (no buy left today)'
-    return f"""You trade spot {SYMBOL}. You can only be long or flat. No shorting, no leverage.
+    return f"""You trade spot {SYMBOL} in euros. You can only be long or flat. No shorting, no leverage.
 {HINT[strat]}
 
 Last {WINDOW} hourly closes, oldest first: {closes}
@@ -219,6 +232,9 @@ Current price: {px:.2f}
 Typical hourly move (ATR{ATR_LEN}): {a:.2f}
 Your position: {pos}
 You may buy at most once per day.
+
+Your reason must match the numbers above. Do not claim a stop was hit unless
+the price is actually below it.
 
 Position size is decided for you by a fixed risk rule. Do not choose size.
 
@@ -242,23 +258,32 @@ def step(s, candles):
     def note(book, act, why):
         s["recent"].insert(0, dict(t=iso[5:], book=book, act=act, why=why))
 
+    # keep OHLC for the chart tab
+    seen = {c[0] for c in s["candles"]}
+    for c in candles:
+        if c[0] not in seen:
+            s["candles"].append([c[0], round(c[1], 2), round(c[2], 2),
+                                 round(c[3], 2), round(c[4], 2)])
+    s["candles"] = sorted(s["candles"], key=lambda c: c[0])[-CANDLE_MAX:]
+
     # stops
     for b in books.values():
         if b["pos"] and b["name"] != "HODL" and low <= b["pos"]["stop"]:
             sp = b["pos"]["stop"]
             pnl = sell(b, sp, iso, "stop hit")
-            note(b["name"], "STOP", f"{sp:.2f} ({pnl:+.2f})")
+            note(b["name"], "STOP", f"stop {sp:.2f} hit ({pnl:+.2f} EUR)")
 
-    # HODL
+    # HODL - buys once, never sells, on purpose
     h = books["HODL"]
     if not h["pos"] and h["cash"] > MIN_NOTIONAL:
         fill = px * (1 + SLIPPAGE)
         qty  = h["cash"] / (fill * (1 + FEE_RATE))
         h["cash"] -= qty * fill * (1 + FEE_RATE)
-        h["pos"] = dict(qty=qty, entry=fill, stop=0.0, risk=1e9,
-                        t=iso, why="bought once, holds forever")
+        h["pos"] = dict(qty=qty, entry=fill, stop=0.0, risk=1e9, t=iso,
+                        why="bought once, never sells - the do-nothing benchmark",
+                        eq_in=CAPITAL)
 
-    # CROSS - no AI, free to run, and it might beat everything
+    # CROSS - no AI, free to run
     cb = books["CROSS"]
     if len(candles) >= 30:
         fast, slow = sma(candles, 10), sma(candles, 30)
@@ -267,7 +292,7 @@ def step(s, candles):
                 note("CROSS", "BUY", "10 crossed above 30")
         elif fast < slow and cb["pos"]:
             pnl = sell(cb, px, iso, "crossed back below")
-            note("CROSS", "CLOSE", f"crossed back ({pnl:+.2f})")
+            note("CROSS", "CLOSE", f"crossed back ({pnl:+.2f} EUR)")
 
     # the 20 AI books
     active = [s["winner"]] if (s["phase"] == "B" and s["winner"]) else BOOKS
@@ -277,7 +302,7 @@ def step(s, candles):
         strat = name.rsplit("-", 1)[0]
         can_buy = b["last_buy"] != day
 
-        # quota saver: flat with no buy left means nothing can happen. Skip the call.
+        # quota saver: flat with no buy left means nothing can happen
         if not b["pos"] and not can_buy:
             continue
 
@@ -299,14 +324,14 @@ def step(s, candles):
 
         if act == "buy" and not b["pos"]:
             if not can_buy:
-                s["fails"] += 1                    # tried to break the daily rule
+                s["fails"] += 1
                 note(name, "BLOCK", "already bought today")
             elif buy(b, px, px - STOP_MULT * a, day, iso, conf, why):
                 entered = True
                 note(name, "BUY", why)
         elif act == "close" and b["pos"]:
             pnl = sell(b, px, iso, why)
-            note(name, "CLOSE", f"{why} ({pnl:+.2f})")
+            note(name, "CLOSE", f"{why} ({pnl:+.2f} EUR)")
         elif act not in ("buy", "hold", "close"):
             s["fails"] += 1
             note(name, "FAIL", f"bad action '{act[:12]}'")
@@ -343,36 +368,41 @@ def emit(s, px):
     rows, all_trades = [], []
 
     for n, b in books.items():
-        tr, e = b["trades"], eq(b, px)
-        p = b["pos"]
+        tr = b["trades"]
+        e  = eq(b, px)
+        p  = b["pos"]
         rows.append(dict(
             name=n, kind=b["kind"],
-            ret=round((e / CAPITAL - 1) * 100, 2), n=len(tr),
+            eur=round(e, 2),                       # euros right now
+            pnl=round(e - CAPITAL, 2),             # euros made or lost
+            ret=round((e / CAPITAL - 1) * 100, 2),
+            cash=round(b["cash"], 2),
+            n=len(tr),
             win=round(100 * sum(1 for t in tr if t["pnl"] > 0) / len(tr)) if tr else 0,
             avgR=round(statistics.fmean([t["R"] for t in tr]), 2) if tr else 0,
-            best=round(max((t["R"] for t in tr), default=0), 2),
-            worst=round(min((t["R"] for t in tr), default=0), 2),
+            best=round(max((t["pnl"] for t in tr), default=0), 2),
+            worst=round(min((t["pnl"] for t in tr), default=0), 2),
             dd=round((b["peak"] - e) / b["peak"] * 100, 1) if b["peak"] else 0,
             hint=HINT.get(n.rsplit("-", 1)[0], ""),
             open=dict(px_in=round(p["entry"], 2), t=p.get("t", ""),
                       why=p.get("why", ""), stop=round(p["stop"], 2),
-                      upl=round((px - p["entry"]) / p["entry"] * 100, 2)) if p else None))
+                      size=round(p["qty"] * p["entry"], 2),
+                      upl=round((px - p["entry"]) * p["qty"], 2),
+                      uplpc=round((px - p["entry"]) / p["entry"] * 100, 2)) if p else None))
         for t in tr:
             all_trades.append(dict(book=n, **t))
 
-    rows.sort(key=lambda x: -x["ret"])
+    rows.sort(key=lambda x: -x["eur"])
     all_trades.sort(key=lambda t: t["tout"], reverse=True)
     all_trades = all_trades[:TRADES_MAX]
 
-    # THE measurement: how far apart do identical twins finish?
     gaps = []
     for name, _ in STRATEGIES:
         A, B = books.get(f"{name}-A"), books.get(f"{name}-B")
         if A and B:
             ea, eb = eq(A, px), eq(B, px)
-            gaps.append(dict(s=name, a=round((ea/CAPITAL-1)*100, 2),
-                             b=round((eb/CAPITAL-1)*100, 2),
-                             gap=round(abs(ea - eb) / CAPITAL * 100, 2)))
+            gaps.append(dict(s=name, a=round(ea, 2), b=round(eb, 2),
+                             gap=round(abs(ea - eb), 2)))
     floor = round(statistics.median([g["gap"] for g in gaps]), 2) if gaps else 0
 
     calib = []
@@ -387,15 +417,15 @@ def emit(s, px):
     DATA.write_text(json.dumps(dict(
         updated=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         symbol=SYMBOL, timeframe=TIMEFRAME, price=round(px, 2), capital=CAPITAL,
+        currency="EUR",
         bar=s["bar"], phase=s["phase"], winner=s["winner"], done=s["done"],
         phaseA=PHASE_A_BARS, phaseB=PHASE_B_BARS,
         provider=PROVIDER,
         model=GROQ_M if PROVIDER == "groq" else (GEMINI_M if PROVIDER == "gemini" else ANTHROPIC_M),
         calls=s["calls"], today=s["calls_today"], fails=s["fails"],
         floor=floor, twins=gaps, books=rows, calib=calib, trades=all_trades,
-        history=[dict(t=h["t"][5:], px=h["px"],
-                      eq={k: round((v/CAPITAL-1)*100, 2) for k, v in h["eq"].items()})
-                 for h in s["history"]],
+        candles=s["candles"],
+        history=[dict(t=h["t"][5:], px=h["px"], eq=h["eq"]) for h in s["history"]],
         recent=s["recent"][:25]), separators=(",", ":")))
 
 # ─────────────────────────── prices ─────────────────────────────────
@@ -429,7 +459,7 @@ def main():
     step(s, c)
     STATE.write_text(json.dumps(s, separators=(",", ":")))
     emit(s, c[-1][4])
-    print(f"bar {s['bar']} phase {s['phase']} px {c[-1][4]:.2f} "
+    print(f"bar {s['bar']} phase {s['phase']} px {c[-1][4]:.2f} EUR "
           f"calls {s['calls_today']} today, fails {s['fails']}")
 
 if __name__ == "__main__":
