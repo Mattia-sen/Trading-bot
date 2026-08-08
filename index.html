@@ -219,7 +219,7 @@ async function tick(){
 
   const R=d.recent||[];
   $('log').innerHTML=R.length?R.map(r=>
-    `<div class="r"><span class="b">${r.book}</span><span class="a ${r.act}">${r.act}</span><span class="w"></span></div>`).join('')
+    ``<div class="r"><span style="width:62px;flex:none;color:var(--dim)">${esc(r.t)}</span><span class="b">${esc(r.book)}</span><span class="a ${r.act}">${r.act}</span><span class="w"></span></div>`).join('')
     :'<div class="empty">nothing yet</div>';
   document.querySelectorAll('.log .w').forEach((el,i)=>el.textContent=R[i].why||'');
 }
