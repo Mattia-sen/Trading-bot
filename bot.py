@@ -119,10 +119,13 @@ def buy(b, px, stop, day, ts, conf=None, why=""):
     """Risk rule sizes the trade, then no-leverage caps it. Model cannot override."""
     if b["last_buy"] == day:
         return False                       # one buy per day. Hard rule.
-    e, dist = eq(b, px), px - stop
+    e = eq(b, px)
+    stop = min(stop, px * 0.99)      # stop at least 1% away, or fees eat the trade
+    dist = px - stop
     if dist <= 0:
         return False
-    qty = min((e * RISK_PCT) / dist, e / px)
+    afford = b["cash"] / (px * (1 + SLIPPAGE) * (1 + FEE_RATE) * 1.01)
+    qty = min((e * RISK_PCT) / dist, afford)
     if qty * px < MIN_NOTIONAL:
         return False
     fill = px * (1 + SLIPPAGE)
