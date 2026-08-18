@@ -41,7 +41,7 @@ import requests
 # ─── BUMP THIS whenever you change anything. ───
 # Doing so archives the current failures to docs/fails.csv and zeroes the
 # counter, so the dashboard shows failures caused by THIS version only.
-VERSION = "2026-08-18a"
+VERSION = "2026-08-18b"
 
 SYMBOL       = "ETH/EUR"
 TIMEFRAME    = "1h"
@@ -210,7 +210,9 @@ def call_model(prompt):
         r = requests.post("https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization": "Bearer " + os.environ["GROQ_API_KEY"].strip(),
                      "content-type": "application/json"},
-            json={"model": GROQ_M, "max_tokens": 400, "temperature": 1.0,
+            json={"model": GROQ_M, "max_completion_tokens": 1500,
+                  "temperature": 1.0,
+                  "reasoning_effort": "low",      # reasoning tokens were eating the budget
                   "response_format": {"type": "json_object"},
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=45)
