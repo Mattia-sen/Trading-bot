@@ -54,7 +54,7 @@ TRADES_MAX   = 500
 
 # ─── swap the model here. Only place the provider appears. ───
 PROVIDER    = "groq"
-GROQ_M      = "llama-3.1-8b-instant"
+GROQ_M      = "openai/gpt-oss-20"
 GEMINI_M    = "gemini-2.5-flash"
 ANTHROPIC_M = "claude-sonnet-4-6"
 # Groq free tier caps TOKENS per minute (6000), not just requests.
