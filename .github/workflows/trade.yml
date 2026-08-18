@@ -26,7 +26,6 @@ jobs:
       - name: Install
         run: pip install --quiet ccxt requests
 
-      # never prints the key itself, only its shape
       - name: Check key
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -43,23 +42,27 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python bot.py
 
-      # state.json and docs/data.json are GENERATED, never hand-edited.
-      # On collision we always keep ours - no merge, no rebase, no conflict.
-      # Everything else (bot.py, index.html) comes fresh from the remote, so an
-      # edit made in the browser mid-run is never overwritten.
+      # state.json, docs/data.json and docs/fails.csv are GENERATED, never
+      # hand-edited. On collision we always keep ours - no merge, no rebase.
+      # Everything else comes fresh from the remote, so an edit made in the
+      # browser mid-run is never overwritten.
       - name: Save results
         run: |
           git config user.name  "trading-bot"
           git config user.email "bot@users.noreply.github.com"
           mkdir -p /tmp/out
-          cp state.json /tmp/out/state.json
-          cp docs/data.json /tmp/out/data.json
+          cp state.json      /tmp/out/state.json
+          cp docs/data.json  /tmp/out/data.json
+          [ -f docs/fails.csv ] && cp docs/fails.csv /tmp/out/fails.csv || true
           for i in 1 2 3 4 5; do
             git fetch origin main
             git reset --hard origin/main
+            mkdir -p docs
             cp /tmp/out/state.json state.json
-            mkdir -p docs && cp /tmp/out/data.json docs/data.json
+            cp /tmp/out/data.json  docs/data.json
+            [ -f /tmp/out/fails.csv ] && cp /tmp/out/fails.csv docs/fails.csv || true
             git add state.json docs/data.json
+            [ -f docs/fails.csv ] && git add docs/fails.csv || true
             if git diff --staged --quiet; then
               echo "nothing changed"; exit 0
             fi
