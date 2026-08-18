@@ -43,7 +43,7 @@ RISK_PCT     = 0.01          # 1% = 1 EUR risked per trade
 FEE_RATE     = 0.001
 SLIPPAGE     = 0.0005
 ATR_LEN      = 14
-STOP_MULT    = 2.5
+STOP_MULT    = 6
 WINDOW       = 48
 MIN_NOTIONAL = 5.0
 PHASE_A_BARS = 720           # ~30 days of hourly bars
@@ -148,7 +148,8 @@ def sell(b, px, ts, why=""):
     gross = p["qty"] * fill
     fee   = gross * FEE_RATE
     b["cash"] += gross - fee
-    pnl = (fill - p["entry"]) * p["qty"] - fee
+    entry_fee = p["qty"] * p["entry"] * FEE_RATE
+    pnl = (fill - p["entry"]) * p["qty"] - fee - entry_fee
     b["trades"].append(dict(
         tin=p.get("t", ""), tout=ts,
         px_in=round(p["entry"], 2), px_out=round(fill, 2),
