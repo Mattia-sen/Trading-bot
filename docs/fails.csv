@@ -1,0 +1,110 @@
+archived_at,from_version,bar_time,book,action,detail
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,BASE-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,BASE-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,TREND-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,TREND-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,LEVELS-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,LEVELS-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,SWING-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,SWING-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,RECENT-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,RECENT-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,SHAPE-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,SHAPE-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,MEAN-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,MEAN-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,RANGE-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,RANGE-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,SPEED-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,SPEED-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,CALM-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T09:00+00:00,CALM-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,BASE-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,TREND-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,TREND-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,LEVELS-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,LEVELS-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,SWING-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,SWING-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,RECENT-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,RECENT-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,SHAPE-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,SHAPE-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,MEAN-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,MEAN-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,RANGE-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,RANGE-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,SPEED-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,SPEED-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,CALM-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T10:00+00:00,CALM-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,BASE-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,TREND-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""max completion tokens reached before gener"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,LEVELS-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,SWING-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,SWING-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,RECENT-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,RECENT-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,SHAPE-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,SHAPE-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,MEAN-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,MEAN-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,RANGE-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,SPEED-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,SPEED-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,CALM-A,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
+2026-08-18T13:47:28+00:00,2026-08-18a,08-18T11:00+00:00,CALM-B,FAIL,"HTTP 400: {""error"":{""message"":""Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."",""type"":""invalid_request_error"",""code"":""json_validate_failed"",""failed_generation"":""""}}
+"
