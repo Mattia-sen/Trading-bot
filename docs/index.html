@@ -119,6 +119,10 @@ font-size:10.5px;align-items:flex-start}
 .log .a{width:40px;flex:none;font-weight:600}
 .log .w{flex:1;color:#93A1A7;word-break:break-word;line-height:1.5;white-space:pre-wrap}
 .log .r.fail .w{color:#C48B7E}
+.vtag{display:inline-block;font-size:9px;letter-spacing:.06em;color:#6E7C84;
+background:#0F161A;border:1px solid var(--line);border-radius:2px;
+padding:1px 5px;margin-right:6px;vertical-align:1px;white-space:nowrap}
+.log .r.fail .vtag{color:var(--amber);border-color:#4A3A1C}
 .hidebtn{background:#0F161A;border:1px solid var(--line);color:var(--dim);cursor:pointer;
 padding:5px 9px;border-radius:2px;font-family:'Barlow Condensed',sans-serif;font-size:10px;
 letter-spacing:.13em;text-transform:uppercase;font-weight:600}
@@ -183,7 +187,8 @@ footer{text-align:center;color:var(--dim);font-size:10px;margin-top:14px;line-he
     <div class="hd"><span class="lbl">Activity</span>
       <span style="display:flex;gap:8px;align-items:center">
         <span class="badge" id="health">—</span>
-        <button class="hidebtn" id="hidefails">Hide fails</button>
+        <a class="hidebtn" id="archlink" href="fails.csv" download
+           style="text-decoration:none;display:none">Archive</a>
       </span></div>
     <div class="log" id="log"><div class="empty">nothing yet</div></div>
   </div>
@@ -244,27 +249,6 @@ function esc(s){var d=document.createElement('div');d.textContent=(s==null?'':s)
 
 var D=null, sel=null, filt='ALL', cbook='ALL';
 var vEq={n:0,off:0}, vCd={n:120,off:0}, vBk={n:0,off:0};
-
-/* Hiding failed calls is a DISPLAY filter only - data.json is untouched.
-   The code below is served to the browser, so this passcode is readable by
-   anyone who views source. That is fine here: it guards a view toggle on
-   public data, nothing more. */
-var PASS='1819';
-var hideFails=false;
-try{ hideFails = localStorage.getItem('hideFails')==='1'; }catch(e){}
-
-function toggleFails(){
-  if(!hideFails){
-    var p=window.prompt('Passcode to hide failed calls:');
-    if(p===null)return;
-    if(p.trim()!==PASS){ window.alert('Wrong passcode.'); return; }
-    hideFails=true;
-  } else {
-    hideFails=false;                     /* showing them again needs no passcode */
-  }
-  try{ localStorage.setItem('hideFails',hideFails?'1':'0'); }catch(e){}
-  if(D)render();
-}
 
 /* ───────────── tabs ───────────── */
 Array.prototype.forEach.call(document.querySelectorAll('nav button'),function(b){
@@ -576,10 +560,14 @@ function render(){
   var age=(Date.now()-new Date(D.updated))/6e4;
   $('upd').textContent=age<90?Math.round(age)+'m ago':Math.round(age/60)+'h ago';
   $('upd').className='t'+(age>150?' stale':'');
-  $('mdl').textContent=D.model;
+  $('mdl').textContent=D.model+(D.version?' \u00B7 v'+D.version:'');
   var tot=D.calls+D.fails;
+  var fa=(D.fails_all!=null?D.fails_all:D.fails), arc=(D.archived||0);
   $('health').textContent=D.calls+' calls \u00B7 '+D.fails+' failed'+
-    (tot?' ('+(100*D.fails/tot).toFixed(0)+'%)':'');
+    (tot?' ('+(100*D.fails/tot).toFixed(0)+'%)':'')+
+    (arc?' \u00B7 '+arc+' archived':'')+
+    (fa!==D.fails?' \u00B7 '+fa+' lifetime':'');
+  $('archlink').style.display=arc?'':'none';
 
   $('floor').textContent=D.floor?'\u00B1\u20AC'+D.floor.toFixed(2):'\u2014';
   $('floorc').textContent=D.floor
@@ -642,21 +630,15 @@ function render(){
   }
 
   var R=D.recent||[];
-  var shown=hideFails?R.filter(function(r){return r.act!=='FAIL'&&r.act!=='BLOCK';}):R;
-  var nHidden=R.length-shown.length;
-  $('log').innerHTML=shown.length?shown.map(function(r){
+  $('log').innerHTML=R.length?R.map(function(r){
     var isFail=(r.act==='FAIL'||r.act==='BLOCK');
+    /* version tag on failures so you can always tell which code state caused it */
+    var vt=(isFail&&r.v)?'<span class="vtag">v'+esc(r.v)+'</span>':'';
     return '<div class="r'+(isFail?' fail':'')+'"><span class="tm">'+esc(r.t)+'</span>'+
       '<span class="b">'+esc(r.book)+'</span>'+
       '<span class="a '+r.act+'">'+esc(r.act)+'</span>'+
-      '<span class="w">'+esc(r.why)+'</span></div>';}).join('')
-    :'<div class="empty">'+(nHidden?nHidden+' failed calls hidden.':'nothing yet')+'</div>';
-  if(nHidden&&shown.length){
-    $('log').insertAdjacentHTML('beforeend',
-      '<div class="empty" style="padding:10px">'+nHidden+' failed calls hidden</div>');
-  }
-  $('hidefails').textContent=hideFails?'Show fails':'Hide fails';
-  $('hidefails').classList.toggle('on',hideFails);
+      '<span class="w">'+vt+esc(r.why)+'</span></div>';}).join('')
+    :'<div class="empty">nothing yet</div>';
 
   var cn=['ALL'].concat(D.books.map(function(b){return b.name;}));
   $('cpick').innerHTML=cn.map(function(n){
@@ -690,8 +672,6 @@ Array.prototype.forEach.call(document.querySelectorAll('[data-z]'),function(b){
     var z=+b.dataset.z;
     vCd.n=z||((D&&D.candles)?D.candles.length:0); vCd.off=0; drawCandles();
   };});
-
-$('hidefails').onclick=toggleFails;
 
 window.addEventListener('resize',function(){
   drawEquity();
