@@ -316,7 +316,7 @@ def step(s, candles):
             s["calls_today"] += 1
         except Exception as e:
             s["fails"] += 1
-            note(name, "FAIL", str(e)[:70])
+            note(name, "FAIL", str(e)[:250])
             time.sleep(CALL_GAP)          # pace failures too, or one 429 cascades
             continue
         time.sleep(CALL_GAP)
