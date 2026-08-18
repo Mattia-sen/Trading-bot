@@ -112,10 +112,18 @@ padding:6px 9px;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-siz
 .hintbox{padding:10px 12px;font-size:11.5px;color:#93A1A7;line-height:1.5;border-bottom:1px solid var(--line2)}
 
 .log{max-height:260px;overflow-y:auto}
-.log .r{display:flex;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line2);font-size:10.5px}
+.log .r{display:flex;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line2);
+font-size:10.5px;align-items:flex-start}
 .log .tm{width:58px;flex:none;color:#5D6E75}
 .log .b{width:66px;flex:none;color:var(--dim)}
-.log .a{width:40px;flex:none;font-weight:600}.log .w{flex:1;color:#93A1A7;overflow:hidden}
+.log .a{width:40px;flex:none;font-weight:600}
+.log .w{flex:1;color:#93A1A7;word-break:break-word;line-height:1.5;white-space:pre-wrap}
+.log .r.fail .w{color:#C48B7E}
+.hidebtn{background:#0F161A;border:1px solid var(--line);color:var(--dim);cursor:pointer;
+padding:5px 9px;border-radius:2px;font-family:'Barlow Condensed',sans-serif;font-size:10px;
+letter-spacing:.13em;text-transform:uppercase;font-weight:600}
+.hidebtn:hover{color:var(--txt);border-color:var(--dim)}
+.hidebtn.on{border-color:var(--amber);color:var(--amber)}
 .BUY{color:var(--good)}.CLOSE{color:var(--violet)}.STOP{color:var(--bad)}
 .FAIL,.BLOCK{color:var(--bad)}.PHASE{color:var(--amber)}
 .empty{padding:24px 12px;text-align:center;color:var(--dim);font-size:11.5px;line-height:1.6}
@@ -172,7 +180,11 @@ footer{text-align:center;color:var(--dim);font-size:10px;margin-top:14px;line-he
     <div class="cal" id="cal"></div>
   </div>
   <div class="card">
-    <div class="hd"><span class="lbl">Activity</span><span class="badge" id="health">—</span></div>
+    <div class="hd"><span class="lbl">Activity</span>
+      <span style="display:flex;gap:8px;align-items:center">
+        <span class="badge" id="health">—</span>
+        <button class="hidebtn" id="hidefails">Hide fails</button>
+      </span></div>
     <div class="log" id="log"><div class="empty">nothing yet</div></div>
   </div>
 </div>
@@ -187,7 +199,7 @@ footer{text-align:center;color:var(--dim);font-size:10px;margin-top:14px;line-he
     </div>
   </div>
   <div class="card"><div class="pick" id="cpick"></div></div>
-  <div class="card"><div class="hintbox">Green triangles are entries, violet circles are exits, red circles are stop-outs. The dashed red line is where the stop sat while the trade was open.</div></div>
+  <div class="card"><div class="hintbox">Yellow triangles are entries, violet circles are exits, red circles are stop-outs. The dashed red line is where the stop sat while the trade was open.</div></div>
 </div>
 
 <div class="tab" id="tr">
@@ -232,6 +244,27 @@ function esc(s){var d=document.createElement('div');d.textContent=(s==null?'':s)
 
 var D=null, sel=null, filt='ALL', cbook='ALL';
 var vEq={n:0,off:0}, vCd={n:120,off:0}, vBk={n:0,off:0};
+
+/* Hiding failed calls is a DISPLAY filter only - data.json is untouched.
+   The code below is served to the browser, so this passcode is readable by
+   anyone who views source. That is fine here: it guards a view toggle on
+   public data, nothing more. */
+var PASS='1819';
+var hideFails=false;
+try{ hideFails = localStorage.getItem('hideFails')==='1'; }catch(e){}
+
+function toggleFails(){
+  if(!hideFails){
+    var p=window.prompt('Passcode to hide failed calls:');
+    if(p===null)return;
+    if(p.trim()!==PASS){ window.alert('Wrong passcode.'); return; }
+    hideFails=true;
+  } else {
+    hideFails=false;                     /* showing them again needs no passcode */
+  }
+  try{ localStorage.setItem('hideFails',hideFails?'1':'0'); }catch(e){}
+  if(D)render();
+}
 
 /* ───────────── tabs ───────────── */
 Array.prototype.forEach.call(document.querySelectorAll('nav button'),function(b){
@@ -412,7 +445,7 @@ function drawCandles(){
     var ti=Date.parse(t.tin), to=Date.parse(t.tout);
     if(ti>=t0 && ti<=t1){
       var px1=posAt(ti), py=Y(t.px_in);
-      x.fillStyle='#6FA96B';
+      x.fillStyle='#F0A93B';                       /* entries: yellow triangle */
       x.beginPath();x.moveTo(px1,py+9);x.lineTo(px1-4.5,py+16);x.lineTo(px1+4.5,py+16);
       x.closePath();x.fill();
       if(t.stop && t.stop>lo && t.stop<hi){
@@ -609,12 +642,21 @@ function render(){
   }
 
   var R=D.recent||[];
-  $('log').innerHTML=R.length?R.map(function(r){
-    return '<div class="r"><span class="tm">'+esc(r.t)+'</span>'+
+  var shown=hideFails?R.filter(function(r){return r.act!=='FAIL'&&r.act!=='BLOCK';}):R;
+  var nHidden=R.length-shown.length;
+  $('log').innerHTML=shown.length?shown.map(function(r){
+    var isFail=(r.act==='FAIL'||r.act==='BLOCK');
+    return '<div class="r'+(isFail?' fail':'')+'"><span class="tm">'+esc(r.t)+'</span>'+
       '<span class="b">'+esc(r.book)+'</span>'+
       '<span class="a '+r.act+'">'+esc(r.act)+'</span>'+
       '<span class="w">'+esc(r.why)+'</span></div>';}).join('')
-    :'<div class="empty">nothing yet</div>';
+    :'<div class="empty">'+(nHidden?nHidden+' failed calls hidden.':'nothing yet')+'</div>';
+  if(nHidden&&shown.length){
+    $('log').insertAdjacentHTML('beforeend',
+      '<div class="empty" style="padding:10px">'+nHidden+' failed calls hidden</div>');
+  }
+  $('hidefails').textContent=hideFails?'Show fails':'Hide fails';
+  $('hidefails').classList.toggle('on',hideFails);
 
   var cn=['ALL'].concat(D.books.map(function(b){return b.name;}));
   $('cpick').innerHTML=cn.map(function(n){
@@ -648,6 +690,8 @@ Array.prototype.forEach.call(document.querySelectorAll('[data-z]'),function(b){
     var z=+b.dataset.z;
     vCd.n=z||((D&&D.candles)?D.candles.length:0); vCd.off=0; drawCandles();
   };});
+
+$('hidefails').onclick=toggleFails;
 
 window.addEventListener('resize',function(){
   drawEquity();
