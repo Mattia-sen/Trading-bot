@@ -7,27 +7,29 @@ It reads public price data that needs no login. Nothing here can spend money.
 
 EVERYTHING IS IN EUROS. Market is ETH/EUR, so no conversion anywhere.
 
+FAILURE ARCHIVING
+  Bump VERSION below whenever you change anything. On the next run the bot
+  appends every accumulated failure to docs/fails.csv, clears them out of the
+  live log, and resets the counter to zero. The dashboard then shows only
+  failures caused by the CURRENT version. Nothing is deleted - the CSV keeps
+  the full history, and the lifetime total is still reported separately.
+
 THE EXPERIMENT
   10 strategies, each run TWICE as identical twins (A and B).
-  Same prompt, same rules, same prices. They differ only because the model
-  answers the same question slightly differently each time.
   The gap between twins IS the noise floor - measured, not guessed.
 
 RULES
-  One BUY per book per day. Selling is unlimited. Bots choose when to trade;
-  nothing is forced.
+  One BUY per book per day. Selling is unlimited. Nothing is forced.
   Long or flat only. No shorting, no leverage, no margin.
   Position size set by a 1% risk rule the model cannot override.
 
 CONTROLS (do not delete)
   RANDOM - coin flip
-  HODL   - buys once and NEVER sells. That is the point: it is the
-           "what if you did nothing" benchmark. If it beats the thinking
-           bots, thinking is not paying for itself.
-  CROSS  - moving-average crossover, no AI at all.
+  HODL   - buys once and NEVER sells; the "what if you did nothing" benchmark
+  CROSS  - moving-average crossover, no AI at all
 """
 
-import os, json, time, random, statistics
+import os, csv, json, time, random, statistics
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -36,38 +38,43 @@ import requests
 
 # ───────────────────────────── settings ─────────────────────────────
 
-SYMBOL       = "ETH/EUR"     # euros natively. No conversion, no fudge.
+# ─── BUMP THIS whenever you change anything. ───
+# Doing so archives the current failures to docs/fails.csv and zeroes the
+# counter, so the dashboard shows failures caused by THIS version only.
+VERSION = "2026-08-18a"
+
+SYMBOL       = "ETH/EUR"
 TIMEFRAME    = "1h"
-CAPITAL      = 100.0         # euros
-RISK_PCT     = 0.01          # 1% = 1 EUR risked per trade
+CAPITAL      = 100.0
+RISK_PCT     = 0.01
 FEE_RATE     = 0.001
 SLIPPAGE     = 0.0005
 ATR_LEN      = 14
-STOP_MULT    = 6
+STOP_MULT    = 2.5           # raise toward 5-6 to cut fee drag and stop-outs
 WINDOW       = 48
 MIN_NOTIONAL = 5.0
-PHASE_A_BARS = 720           # ~30 days of hourly bars
+PHASE_A_BARS = 720
 PHASE_B_BARS = 720
 HISTORY_MAX  = 800
-CANDLE_MAX   = 500           # OHLC kept for the chart tab
+CANDLE_MAX   = 500
 TRADES_MAX   = 500
+FAILLOG_MAX  = 2000          # pending failures held in state before archiving
+ERR_CHARS    = 250           # how much of an error message to keep
 
-# ─── swap the model here. Only place the provider appears. ───
 PROVIDER    = "groq"
 GROQ_M      = "openai/gpt-oss-20b"
 GEMINI_M    = "gemini-2.5-flash"
 ANTHROPIC_M = "claude-sonnet-4-6"
-# Groq free tier caps TOKENS per minute (6000), not just requests.
-# 20 books x ~600 tokens needs ~140s of spacing to stay under it.
 CALL_GAP    = 7.0
 
 EXCHANGES = ["kraken", "coinbaseexchange", "bitstamp"]
 
 STATE = Path("state.json")
 DATA  = Path("docs/data.json")
+FAILS = Path("docs/fails.csv")
 
 STRATEGIES = [
-    ("BASE",   ""),   # control: no hint. If nothing beats this, hints do nothing.
+    ("BASE",   ""),
     ("TREND",  "Pay attention to the overall direction of price across the whole window."),
     ("LEVELS", "Pay attention to prices where the market has turned around before."),
     ("SWING",  "Pay attention to how much price is moving now versus earlier in the window."),
@@ -93,13 +100,46 @@ def load():
     if STATE.exists():
         s = json.loads(STATE.read_text())
         s.setdefault("candles", [])
+        s.setdefault("fail_log", [])       # failures not yet archived
+        s.setdefault("fails_all", s.get("fails", 0))
+        s.setdefault("version", "")
+        s.setdefault("archived", 0)
         return s
     books = {b: blank(b) for b in BOOKS}
     for c in CTRLS:
         books[c] = blank(c, kind="ctrl")
     return dict(bar=0, last_ts=None, phase="A", winner=None, done=False,
-                calls=0, calls_today=0, day="", fails=0, books=books,
+                calls=0, calls_today=0, day="", fails=0, fails_all=0,
+                version="", archived=0, fail_log=[], books=books,
                 history=[], candles=[], recent=[])
+
+# ───────────────────── failure archiving ────────────────────────────
+
+def archive_fails(s):
+    """Append pending failures to docs/fails.csv, then clear the live log.
+    Called only when VERSION changes. Nothing is destroyed - the CSV keeps
+    everything, and fails_all still counts the lifetime total."""
+    rows = s.get("fail_log", [])
+    if rows:
+        FAILS.parent.mkdir(parents=True, exist_ok=True)
+        first = not FAILS.exists()
+        stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with FAILS.open("a", newline="") as f:
+            w = csv.writer(f)
+            if first:
+                w.writerow(["archived_at", "from_version", "bar_time",
+                            "book", "action", "detail"])
+            for r in rows:
+                w.writerow([stamp, r.get("v", s.get("version", "")), r.get("t", ""),
+                            r.get("book", ""), r.get("act", ""), r.get("why", "")])
+        s["archived"] = s.get("archived", 0) + len(rows)
+    s["fail_log"] = []
+    s["fails"] = 0
+    s["recent"] = [r for r in s.get("recent", [])
+                   if r.get("act") not in ("FAIL", "BLOCK")]
+    return len(rows)
+
+# ──────────────────────────── indicators ────────────────────────────
 
 def atr(c, n=ATR_LEN):
     tr = [max(c[i][2]-c[i][3], abs(c[i][2]-c[i-1][4]), abs(c[i][3]-c[i-1][4]))
@@ -110,17 +150,15 @@ def sma(c, n):
     return statistics.fmean([x[4] for x in c[-n:]])
 
 def eq(b, px):
-    """Total euros this book is worth right now: cash plus any open position."""
     return b["cash"] + (b["pos"]["qty"]*px if b["pos"] else 0.0)
 
 # ────────────────────────── paper execution ─────────────────────────
 
 def buy(b, px, stop, day, ts, conf=None, why=""):
-    """Risk rule sizes the trade, then no-leverage caps it. Model cannot override."""
     if b["last_buy"] == day:
         return False                       # one buy per day. Hard rule.
     e = eq(b, px)
-    stop = min(stop, px * 0.99)      # stop at least 1% away, or fees eat the trade
+    stop = min(stop, px * 0.99)            # at least 1% away or fees eat it
     dist = px - stop
     if dist <= 0:
         return False
@@ -140,7 +178,6 @@ def buy(b, px, stop, day, ts, conf=None, why=""):
     return True
 
 def sell(b, px, ts, why=""):
-    """Records the full trade including the stop it was protected by."""
     p = b["pos"]
     if not p:
         return 0.0
@@ -148,19 +185,17 @@ def sell(b, px, ts, why=""):
     gross = p["qty"] * fill
     fee   = gross * FEE_RATE
     b["cash"] += gross - fee
-    entry_fee = p["qty"] * p["entry"] * FEE_RATE
+    entry_fee = p["qty"] * p["entry"] * FEE_RATE     # entry fee counts too
     pnl = (fill - p["entry"]) * p["qty"] - fee - entry_fee
     b["trades"].append(dict(
         tin=p.get("t", ""), tout=ts,
         px_in=round(p["entry"], 2), px_out=round(fill, 2),
-        stop=round(p["stop"], 2),
-        qty=round(p["qty"], 6),
-        size=round(p["qty"] * p["entry"], 2),      # euros put to work
-        risk=round(p["risk"], 2),                  # euros at risk
-        pnl=round(pnl, 2),                         # euros won or lost
+        stop=round(p["stop"], 2), qty=round(p["qty"], 6),
+        size=round(p["qty"] * p["entry"], 2),
+        risk=round(p["risk"], 2),
+        pnl=round(pnl, 2),
         R=round(pnl / p["risk"], 2) if p["risk"] else 0,
-        eq_in=p.get("eq_in", CAPITAL),
-        eq_out=round(b["cash"], 2),                # euros after closing
+        eq_in=p.get("eq_in", CAPITAL), eq_out=round(b["cash"], 2),
         conf=p.get("conf"),
         why_in=p.get("why", "")[:60], why_out=why[:60]))
     if p.get("conf") is not None:
@@ -171,7 +206,6 @@ def sell(b, px, ts, why=""):
 # ─────────────────────────── model call ─────────────────────────────
 
 def call_model(prompt):
-    """Returns a parsed dict. Raises on any failure - the caller counts it."""
     if PROVIDER == "groq":
         r = requests.post("https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization": "Bearer " + os.environ["GROQ_API_KEY"].strip(),
@@ -183,7 +217,7 @@ def call_model(prompt):
         if r.status_code != 200:
             if r.status_code == 429:
                 time.sleep(10)
-            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
+            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:ERR_CHARS]}")
         txt = r.json()["choices"][0]["message"]["content"]
 
     elif PROVIDER == "gemini":
@@ -199,7 +233,7 @@ def call_model(prompt):
         if r.status_code != 200:
             if r.status_code == 429:
                 time.sleep(10)
-            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
+            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:ERR_CHARS]}")
         txt = r.json()["candidates"][0]["content"]["parts"][0]["text"]
 
     else:
@@ -211,7 +245,7 @@ def call_model(prompt):
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=45)
         if r.status_code != 200:
-            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
+            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:ERR_CHARS]}")
         txt = "".join(x.get("text", "") for x in r.json()["content"])
 
     txt = txt.replace("```json", "").replace("```", "").strip()
@@ -260,7 +294,15 @@ def step(s, candles):
         s["day"], s["calls_today"] = day, 0
 
     def note(book, act, why):
-        s["recent"].insert(0, dict(t=iso[5:], book=book, act=act, why=why))
+        # every entry carries the version that produced it, so a failure can
+        # always be traced to a specific code state - even before archiving
+        rec = dict(t=iso[5:], book=book, act=act, why=why, v=VERSION)
+        s["recent"].insert(0, rec)
+        if act in ("FAIL", "BLOCK"):
+            s["fail_log"].append(rec)
+            s["fail_log"] = s["fail_log"][-FAILLOG_MAX:]
+            s["fails"] += 1
+            s["fails_all"] = s.get("fails_all", 0) + 1
 
     # keep OHLC for the chart tab
     seen = {c[0] for c in s["candles"]}
@@ -270,14 +312,12 @@ def step(s, candles):
                                  round(c[3], 2), round(c[4], 2)])
     s["candles"] = sorted(s["candles"], key=lambda c: c[0])[-CANDLE_MAX:]
 
-    # stops
     for b in books.values():
         if b["pos"] and b["name"] != "HODL" and low <= b["pos"]["stop"]:
             sp = b["pos"]["stop"]
             pnl = sell(b, sp, iso, "stop hit")
             note(b["name"], "STOP", f"stop {sp:.2f} hit ({pnl:+.2f} EUR)")
 
-    # HODL - buys once, never sells, on purpose
     h = books["HODL"]
     if not h["pos"] and h["cash"] > MIN_NOTIONAL:
         fill = px * (1 + SLIPPAGE)
@@ -287,7 +327,6 @@ def step(s, candles):
                         why="bought once, never sells - the do-nothing benchmark",
                         eq_in=CAPITAL)
 
-    # CROSS - no AI, free to run
     cb = books["CROSS"]
     if len(candles) >= 30:
         fast, slow = sma(candles, 10), sma(candles, 30)
@@ -298,7 +337,6 @@ def step(s, candles):
             pnl = sell(cb, px, iso, "crossed back below")
             note("CROSS", "CLOSE", f"crossed back ({pnl:+.2f} EUR)")
 
-    # the 20 AI books
     active = [s["winner"]] if (s["phase"] == "B" and s["winner"]) else BOOKS
     entered = False
     for name in active:
@@ -306,7 +344,6 @@ def step(s, candles):
         strat = name.rsplit("-", 1)[0]
         can_buy = b["last_buy"] != day
 
-        # quota saver: flat with no buy left means nothing can happen
         if not b["pos"] and not can_buy:
             continue
 
@@ -315,9 +352,8 @@ def step(s, candles):
             s["calls"] += 1
             s["calls_today"] += 1
         except Exception as e:
-            s["fails"] += 1
-            note(name, "FAIL", str(e)[:250])
-            time.sleep(CALL_GAP)          # pace failures too, or one 429 cascades
+            note(name, "FAIL", str(e)[:ERR_CHARS])
+            time.sleep(CALL_GAP)
             continue
         time.sleep(CALL_GAP)
 
@@ -328,8 +364,7 @@ def step(s, candles):
 
         if act == "buy" and not b["pos"]:
             if not can_buy:
-                s["fails"] += 1
-                note(name, "BLOCK", "already bought today")
+                note(name, "BLOCK", "tried to buy twice in one day")
             elif buy(b, px, px - STOP_MULT * a, day, iso, conf, why):
                 entered = True
                 note(name, "BUY", why)
@@ -337,10 +372,8 @@ def step(s, candles):
             pnl = sell(b, px, iso, why)
             note(name, "CLOSE", f"{why} ({pnl:+.2f} EUR)")
         elif act not in ("buy", "hold", "close"):
-            s["fails"] += 1
-            note(name, "FAIL", f"bad action '{act[:12]}'")
+            note(name, "FAIL", f"model returned an unknown action: '{act[:40]}'")
 
-    # RANDOM mirrors entry timing, flips a coin
     rb = books["RANDOM"]
     if entered and not rb["pos"] and random.random() < 0.5:
         buy(rb, px, px - STOP_MULT * a, day, iso, why="coin flip: enter")
@@ -353,7 +386,7 @@ def step(s, candles):
     s["history"].append(dict(t=iso, px=round(px, 2),
                              eq={n: round(eq(b, px), 2) for n, b in books.items()}))
     s["history"] = s["history"][-HISTORY_MAX:]
-    s["recent"]  = s["recent"][:30]
+    s["recent"]  = s["recent"][:40]
     s["bar"] += 1
 
     if s["phase"] == "A" and s["bar"] >= PHASE_A_BARS:
@@ -377,10 +410,8 @@ def emit(s, px):
         p  = b["pos"]
         rows.append(dict(
             name=n, kind=b["kind"],
-            eur=round(e, 2),                       # euros right now
-            pnl=round(e - CAPITAL, 2),             # euros made or lost
-            ret=round((e / CAPITAL - 1) * 100, 2),
-            cash=round(b["cash"], 2),
+            eur=round(e, 2), pnl=round(e - CAPITAL, 2),
+            ret=round((e / CAPITAL - 1) * 100, 2), cash=round(b["cash"], 2),
             n=len(tr),
             win=round(100 * sum(1 for t in tr if t["pnl"] > 0) / len(tr)) if tr else 0,
             avgR=round(statistics.fmean([t["R"] for t in tr]), 2) if tr else 0,
@@ -421,22 +452,22 @@ def emit(s, px):
     DATA.write_text(json.dumps(dict(
         updated=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         symbol=SYMBOL, timeframe=TIMEFRAME, price=round(px, 2), capital=CAPITAL,
-        currency="EUR",
+        currency="EUR", version=VERSION,
         bar=s["bar"], phase=s["phase"], winner=s["winner"], done=s["done"],
         phaseA=PHASE_A_BARS, phaseB=PHASE_B_BARS,
         provider=PROVIDER,
         model=GROQ_M if PROVIDER == "groq" else (GEMINI_M if PROVIDER == "gemini" else ANTHROPIC_M),
-        calls=s["calls"], today=s["calls_today"], fails=s["fails"],
+        calls=s["calls"], today=s["calls_today"],
+        fails=s["fails"], fails_all=s.get("fails_all", 0),
+        archived=s.get("archived", 0),
         floor=floor, twins=gaps, books=rows, calib=calib, trades=all_trades,
         candles=s["candles"],
         history=[dict(t=h["t"][5:], px=h["px"], eq=h["eq"]) for h in s["history"]],
-        recent=s["recent"][:25]), separators=(",", ":")))
+        recent=s["recent"][:30]), separators=(",", ":")))
 
 # ─────────────────────────── prices ─────────────────────────────────
 
 def fetch_candles():
-    """GitHub's runners are in the US and Binance returns 451 there.
-    Try exchanges in order until one answers."""
     last = None
     for name in EXCHANGES:
         try:
@@ -451,21 +482,37 @@ def fetch_candles():
 
 def main():
     s = load()
+
+    # version bump -> archive failures, reset the live counter
+    if s.get("version") != VERSION:
+        pending = len(s.get("fail_log", []))
+        archive_fails(s)
+        old = s.get("version") or "(none)"
+        s["version"] = VERSION
+        print(f"version {old} -> {VERSION}: archived {pending} failures to {FAILS}, "
+              f"counter reset (lifetime total {s.get('fails_all', 0)})")
+
     if s.get("done"):
         print("experiment complete")
+        emit_px = s["history"][-1]["px"] if s["history"] else CAPITAL
+        emit(s, emit_px)
+        STATE.write_text(json.dumps(s, separators=(",", ":")))
         return
+
     c = fetch_candles()
     if c[-1][0] == s["last_ts"]:
         print("no new candle, refreshing dashboard only")
         emit(s, c[-1][4])
+        STATE.write_text(json.dumps(s, separators=(",", ":")))
         return
+
     s["last_ts"] = c[-1][0]
     step(s, c)
     STATE.write_text(json.dumps(s, separators=(",", ":")))
     emit(s, c[-1][4])
     print(f"bar {s['bar']} phase {s['phase']} px {c[-1][4]:.2f} EUR "
-          f"calls {s['calls_today']} today, fails {s['fails']}")
+          f"calls {s['calls_today']} today, fails {s['fails']} this version "
+          f"({s.get('fails_all', 0)} lifetime)")
 
 if __name__ == "__main__":
     main()
-
