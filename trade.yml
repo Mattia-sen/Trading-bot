@@ -1,0 +1,59 @@
+name: trade
+
+on:
+  schedule:
+    - cron: "7 * * * *"        # 7 min past every hour, UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trade
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25         # Mark 1 pauses 10s between calls
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install --quiet ccxt requests
+
+      - name: Run one hour
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python bot.py
+
+      # state.json, docs/data.json and docs/fails.csv are GENERATED.
+      # On collision we keep ours; everything else comes fresh from the remote,
+      # so a browser edit made mid-run is never overwritten.
+      - name: Save results
+        run: |
+          git config user.name  "trading-bot"
+          git config user.email "bot@users.noreply.github.com"
+          mkdir -p /tmp/out
+          cp state.json     /tmp/out/state.json
+          cp docs/data.json /tmp/out/data.json
+          [ -f docs/fails.csv ] && cp docs/fails.csv /tmp/out/fails.csv || true
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p docs
+            cp /tmp/out/state.json state.json
+            cp /tmp/out/data.json  docs/data.json
+            [ -f /tmp/out/fails.csv ] && cp /tmp/out/fails.csv docs/fails.csv || true
+            git add state.json docs/data.json
+            [ -f docs/fails.csv ] && git add docs/fails.csv || true
+            if git diff --staged --quiet; then echo "nothing changed"; exit 0; fi
+            git commit -m "bar $(date -u +%Y-%m-%dT%H:%M)"
+            if git push origin HEAD:main; then echo "pushed on attempt $i"; exit 0; fi
+            echo "push race, retrying in 5s"; sleep 5
+          done
+          echo "could not push after 5 attempts"; exit 1
